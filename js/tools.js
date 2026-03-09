@@ -58,6 +58,7 @@ function canvasMouseDown(e) {
     state.lastX = pos.x; state.lastY = pos.y;
     pushHistory(tool === 'brush' ? 'Brush' : 'Eraser');
     paintAt(pos.x, pos.y, pos.x, pos.y);
+    renderAll();
   } else if (tool === 'fill') {
     pushHistory('Fill');
     floodFill(pos.x, pos.y, hexToRgba(state.fgColor));
@@ -153,7 +154,7 @@ function canvasMouseMove(e) {
   }
 }
 
-function canvasMouseUp(e) {
+function canvasMouseUp() {
   if (state.panning) { state.panning = false; return; }
   if (state.painting) {
     state.painting = false;
