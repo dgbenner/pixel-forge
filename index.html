@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PixelForge — Image Editor</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- MENU BAR -->
+<div id="menubar">
+  <span class="app-name">PixelForge</span>
+  <div class="menu-item" id="menu-file">File
+    <div class="dropdown">
+      <div class="dd-item" onclick="newDocument()">New… <span class="shortcut">⌘N</span></div>
+      <div class="dd-item" onclick="openFile()">Open… <span class="shortcut">⌘O</span></div>
+      <div class="dd-sep"></div>
+      <div class="dd-item" onclick="saveAsPNG()">Export PNG <span class="shortcut">⌘S</span></div>
+      <div class="dd-item" onclick="saveAsJPEG()">Export JPEG</div>
+    </div>
+  </div>
+  <div class="menu-item" id="menu-edit">Edit
+    <div class="dropdown">
+      <div class="dd-item" onclick="undo()">Undo <span class="shortcut">⌘Z</span></div>
+      <div class="dd-item" onclick="redo()">Redo <span class="shortcut">⇧⌘Z</span></div>
+      <div class="dd-sep"></div>
+      <div class="dd-item" onclick="fillSelection()">Fill… <span class="shortcut">⇧F5</span></div>
+      <div class="dd-item" onclick="clearLayer()">Clear Layer</div>
+    </div>
+  </div>
+  <div class="menu-item" id="menu-image">Image
+    <div class="dropdown">
+      <div class="dd-item" onclick="flattenImage()">Flatten Image</div>
+      <div class="dd-item" onclick="resizeCanvas()">Resize Canvas…</div>
+      <div class="dd-sep"></div>
+      <div class="dd-item" onclick="applyGrayscale()">Grayscale</div>
+      <div class="dd-item" onclick="applyInvert()">Invert</div>
+      <div class="dd-item" onclick="applyBrightness()">Brightness / Contrast…</div>
+    </div>
+  </div>
+  <div class="menu-item" id="menu-layer">Layer
+    <div class="dropdown">
+      <div class="dd-item" onclick="addLayer()">New Layer <span class="shortcut">⇧⌘N</span></div>
+      <div class="dd-item" onclick="duplicateLayer()">Duplicate Layer</div>
+      <div class="dd-item" onclick="deleteLayer()">Delete Layer</div>
+      <div class="dd-sep"></div>
+      <div class="dd-item" onclick="mergeDown()">Merge Down <span class="shortcut">⌘E</span></div>
+    </div>
+  </div>
+  <input type="file" id="file-input" accept="image/*" style="display:none" onchange="loadImageFile(event)">
+</div>
+
+<!-- OPTIONS BAR -->
+<div id="optionsbar">
+  <span id="tool-name" style="color:var(--text-bright);font-weight:600;min-width:60px;">Brush</span>
+  <div class="opt-sep"></div>
+  <label>Size</label>
+  <input type="range" id="brush-size" min="1" max="200" value="20" oninput="updateBrushSize(this.value)">
+  <input type="number" id="brush-size-num" min="1" max="200" value="20" oninput="updateBrushSize(this.value)" style="width:46px">
+  <div class="opt-sep"></div>
+  <label>Opacity</label>
+  <input type="range" id="brush-opacity" min="1" max="100" value="100" oninput="updateOpacity(this.value)">
+  <input type="number" id="brush-opacity-num" min="1" max="100" value="100" oninput="updateOpacity(this.value)" style="width:44px">
+  <span style="color:var(--text-dim)">%</span>
+  <div class="opt-sep"></div>
+  <label id="hardness-label">Hardness</label>
+  <input type="range" id="brush-hardness" min="0" max="100" value="80" oninput="updateHardness(this.value)">
+  <div class="opt-sep"></div>
+  <span id="extra-opts"></span>
+</div>
+
+<!-- TABS BAR -->
+<div id="tabsbar">
+  <div class="canvas-tab active" id="tab-0">Untitled-1</div>
+</div>
+
+<!-- MAIN AREA -->
+<div id="main">
+
+  <!-- LEFT TOOLBAR -->
+  <div id="toolbar">
+    <div class="tool-btn active" data-tool="brush" data-tip="Brush (B)" onclick="setTool('brush')">✏️</div>
+    <div class="tool-btn" data-tool="eraser" data-tip="Eraser (E)" onclick="setTool('eraser')">🧹</div>
+    <div class="tool-btn" data-tool="fill" data-tip="Fill (G)" onclick="setTool('fill')">🪣</div>
+    <div class="tool-sep"></div>
+    <div class="tool-btn" data-tool="select-rect" data-tip="Rectangular Select (M)" onclick="setTool('select-rect')">⬜</div>
+    <div class="tool-btn" data-tool="select-ellipse" data-tip="Elliptical Select" onclick="setTool('select-ellipse')">⭕</div>
+    <div class="tool-btn" data-tool="lasso" data-tip="Lasso" onclick="setTool('lasso')">🔲</div>
+    <div class="tool-sep"></div>
+    <div class="tool-btn" data-tool="move" data-tip="Move (V)" onclick="setTool('move')">✥</div>
+    <div class="tool-btn" data-tool="text" data-tip="Text (T)" onclick="setTool('text')">T</div>
+    <div class="tool-btn" data-tool="eyedropper" data-tip="Eyedropper (I)" onclick="setTool('eyedropper')">🔬</div>
+    <div class="tool-sep"></div>
+    <div class="tool-btn" data-tool="crop" data-tip="Crop (C)" onclick="setTool('crop')">⌗</div>
+    <div class="tool-btn" data-tool="zoom" data-tip="Zoom (Z)" onclick="setTool('zoom')">🔍</div>
+    <div class="tool-btn" data-tool="hand" data-tip="Pan (H)" onclick="setTool('hand')">✋</div>
+    <div class="tool-sep"></div>
+    <!-- Color swatches -->
+    <div id="color-swatches">
+      <div id="bg-color-swatch" title="Background color" onclick="pickBgColor()"></div>
+      <div id="fg-color-swatch" title="Foreground color" onclick="pickFgColor()"></div>
+      <div id="swap-colors" onclick="swapColors()" title="Swap colors">⇄</div>
+    </div>
+  </div>
+
+  <!-- CANVAS AREA -->
+  <div id="canvas-area"
+       onmousedown="canvasMouseDown(event)"
+       onmousemove="canvasMouseMove(event)"
+       onmouseup="canvasMouseUp(event)"
+       onmouseleave="canvasMouseUp(event)"
+       onwheel="canvasWheel(event)"
+       oncontextmenu="return false">
+    <div id="canvas-wrapper">
+      <canvas id="main-canvas"></canvas>
+      <canvas id="overlay-canvas"></canvas>
+      <canvas id="cursor-canvas"></canvas>
+      <div id="selection-overlay"></div>
+    </div>
+    <div id="zoom-indicator">100%</div>
+  </div>
+
+  <!-- RIGHT PANELS -->
+  <div id="panels">
+
+    <!-- Layers -->
+    <div class="panel" id="panel-layers">
+      <div class="panel-header" onclick="togglePanel('layers')">
+        <span>Layers</span><span class="arrow">▾</span>
+      </div>
+      <div class="panel-body">
+        <div class="layer-props">
+          <select id="blend-mode" onchange="setBlendMode(this.value)" title="Blend Mode">
+            <option value="source-over">Normal</option>
+            <option value="multiply">Multiply</option>
+            <option value="screen">Screen</option>
+            <option value="overlay">Overlay</option>
+            <option value="darken">Darken</option>
+            <option value="lighten">Lighten</option>
+            <option value="color-dodge">Color Dodge</option>
+            <option value="color-burn">Color Burn</option>
+            <option value="hard-light">Hard Light</option>
+            <option value="soft-light">Soft Light</option>
+            <option value="difference">Difference</option>
+            <option value="exclusion">Exclusion</option>
+            <option value="hue">Hue</option>
+            <option value="saturation">Saturation</option>
+            <option value="color">Color</option>
+            <option value="luminosity">Luminosity</option>
+          </select>
+          <span style="font-size:10px;color:var(--text-dim)">Opacity</span>
+          <input type="number" min="0" max="100" value="100" id="layer-opacity" onchange="setLayerOpacity(this.value)" style="width:44px">
+          <span style="font-size:10px;color:var(--text-dim)">%</span>
+        </div>
+        <div id="layers-list"></div>
+        <div class="layer-actions">
+          <div class="layer-btn" onclick="addLayer()" title="New Layer">+</div>
+          <div class="layer-btn" onclick="duplicateLayer()" title="Duplicate">⧉</div>
+          <div class="layer-btn" onclick="mergeDown()" title="Merge Down">⤓</div>
+          <div class="layer-btn" onclick="deleteLayer()" title="Delete Layer">🗑</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Color -->
+    <div class="panel" id="panel-color">
+      <div class="panel-header" onclick="togglePanel('color')">
+        <span>Color</span><span class="arrow">▾</span>
+      </div>
+      <div class="panel-body" id="color-panel-body">
+        <div style="display:flex;gap:6px;margin-bottom:6px">
+          <div style="flex:1;height:30px;border-radius:3px;border:1px solid var(--border);cursor:pointer" id="cp-fg" onclick="pickFgColor()" title="Foreground"></div>
+          <div style="flex:1;height:30px;border-radius:3px;border:1px solid var(--border);cursor:pointer" id="cp-bg" onclick="pickBgColor()" title="Background"></div>
+        </div>
+        <div class="color-sliders">
+          <div class="color-row">
+            <label>R</label>
+            <input type="range" id="sl-r" min="0" max="255" oninput="sliderToColor()">
+            <input type="number" id="num-r" min="0" max="255" oninput="sliderToColor()" style="width:40px">
+          </div>
+          <div class="color-row">
+            <label>G</label>
+            <input type="range" id="sl-g" min="0" max="255" oninput="sliderToColor()">
+            <input type="number" id="num-g" min="0" max="255" oninput="sliderToColor()" style="width:40px">
+          </div>
+          <div class="color-row">
+            <label>B</label>
+            <input type="range" id="sl-b" min="0" max="255" oninput="sliderToColor()">
+            <input type="number" id="num-b" min="0" max="255" oninput="sliderToColor()" style="width:40px">
+          </div>
+          <div class="color-row">
+            <label>A</label>
+            <input type="range" id="sl-a" min="0" max="255" value="255" oninput="sliderToColor()">
+            <input type="number" id="num-a" min="0" max="255" value="255" oninput="sliderToColor()" style="width:40px">
+          </div>
+        </div>
+        <div id="hex-input-row">
+          <label>#</label>
+          <input type="text" id="hex-input" maxlength="8" placeholder="000000ff" oninput="hexToColor()">
+        </div>
+        <!-- Swatches -->
+        <div id="swatches-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin-top:6px"></div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="panel" id="panel-filters">
+      <div class="panel-header" onclick="togglePanel('filters')">
+        <span>Filters</span><span class="arrow">▾</span>
+      </div>
+      <div class="panel-body">
+
+        <div class="filter-row">
+          <label>Blur</label>
+          <input type="range" id="filter-blur" min="0" max="20" step="0.5" value="0">
+          <span class="filter-val" id="filter-blur-val">0px</span>
+        </div>
+
+        <div class="filter-row">
+          <label>Sharpen</label>
+          <input type="range" id="filter-sharpen" min="0" max="10" step="0.5" value="0">
+          <span class="filter-val" id="filter-sharpen-val"></span>
+        </div>
+
+        <div class="filter-row">
+          <label>Hue</label>
+          <input type="range" id="filter-hue" min="0" max="360" step="1" value="0">
+          <span class="filter-val" id="filter-hue-val">0°</span>
+        </div>
+
+        <div class="filter-row">
+          <label>Saturation</label>
+          <input type="range" id="filter-saturation" min="0" max="200" step="1" value="100">
+          <span class="filter-val" id="filter-saturation-val">100%</span>
+        </div>
+
+        <div class="filter-actions">
+          <div class="filter-apply-btn" onclick="applyFilters()">Apply</div>
+          <div class="filter-reset-btn" onclick="resetFilters()">Reset</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="panel" id="panel-history">
+      <div class="panel-header" onclick="togglePanel('history')">
+        <span>History</span><span class="arrow">▾</span>
+      </div>
+      <div class="panel-body">
+        <div id="history-list"></div>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="panel" id="panel-info">
+      <div class="panel-header" onclick="togglePanel('info')">
+        <span>Info</span><span class="arrow">▾</span>
+      </div>
+      <div class="panel-body">
+        <div class="info-grid">
+          <span class="info-label">X</span><span class="info-value" id="info-x">—</span>
+          <span class="info-label">Y</span><span class="info-value" id="info-y">—</span>
+          <span class="info-label">R</span><span class="info-value" id="info-r">—</span>
+          <span class="info-label">G</span><span class="info-value" id="info-g">—</span>
+          <span class="info-label">B</span><span class="info-value" id="info-b">—</span>
+          <span class="info-label">A</span><span class="info-value" id="info-a">—</span>
+          <span class="info-label">Size</span><span class="info-value" id="info-size">—</span>
+          <span class="info-label">Layers</span><span class="info-value" id="info-layers">—</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /#panels -->
+</div><!-- /#main -->
+
+<!-- STATUS BAR -->
+<div id="statusbar">
+  <span id="status-doc">Untitled-1</span>
+  <span id="status-size">1280 × 720 px</span>
+  <span id="status-zoom">100%</span>
+  <span id="status-color">sRGB 8bit</span>
+  <span id="status-pos" style="margin-left:auto"></span>
+</div>
+
+<!-- NEW DOCUMENT / RESIZE MODAL -->
+<div id="modal-overlay">
+  <div id="modal">
+    <h2 id="modal-title">New Document</h2>
+    <div id="modal-body"></div>
+    <div class="modal-buttons">
+      <button class="modal-btn" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn primary" id="modal-ok" onclick="modalOK()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden native color pickers -->
+<input type="color" id="fg-color-input" style="display:none" oninput="fgColorChanged(this.value)">
+<input type="color" id="bg-color-input" style="display:none" oninput="bgColorChanged(this.value)">
+
+<!--
+  Script load order:
+    1. state   — shared state object (no deps)
+    2. canvas  — canvas elements, render, transform (needs state)
+    3. tools   — drawing tools, mouse handlers (needs state, canvas)
+    4. layers  — layer CRUD, panel render (needs state, canvas, history)
+    5. history — undo/redo stack (needs state, canvas, layers)
+    6. color   — color picker, swatches (needs state)
+    7. filters — filter sliders and application (needs state, canvas, history)
+    8. ui      — menus, keyboard, file ops, adjustments (needs everything)
+-->
+<script src="js/state.js"></script>
+<script src="js/canvas.js"></script>
+<script src="js/tools.js"></script>
+<script src="js/layers.js"></script>
+<script src="js/history.js"></script>
+<script src="js/color.js"></script>
+<script src="js/filters.js"></script>
+<script src="js/ui.js"></script>
+
+<script>
+// ── Bootstrap ─────────────────────────────────────────────
+buildSwatches();
+initDocument(1280, 720, '#ffffff');
+updateColorUI();
+setTool('brush');
+updateOptionsBar('brush');
+initFilterSliders();
+</script>
+
+</body>
+</html>
