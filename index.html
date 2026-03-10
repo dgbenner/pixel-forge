@@ -282,6 +282,16 @@
   <span id="status-zoom">100%</span>
   <span id="status-color">sRGB 8bit</span>
   <span id="status-pos" style="margin-left:auto"></span>
+  <button id="feature-request-btn" onclick="document.getElementById('feature-panel').classList.toggle('open')">Add a Feature</button>
+</div>
+
+<!-- FEATURE REQUEST PANEL -->
+<div id="feature-panel">
+  <div id="feature-panel-header">
+    <span>Feature Request</span>
+    <button onclick="document.getElementById('feature-panel').classList.remove('open')">&times;</button>
+  </div>
+  <textarea id="feature-textarea" placeholder="Describe a feature you'd like to see..."></textarea>
 </div>
 
 <!-- NEW DOCUMENT / RESIZE MODAL -->

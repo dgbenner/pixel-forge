@@ -504,6 +504,60 @@ body {
 }
 #statusbar span { color: var(--text); }
 
+#feature-request-btn {
+  background: #666;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: 2px 8px;
+  font-size: 10px;
+  cursor: pointer;
+  margin-left: 8px;
+}
+#feature-request-btn:hover { background: #777; }
+
+#feature-panel {
+  display: none;
+  position: fixed;
+  bottom: 22px;
+  right: 0;
+  width: 320px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  flex-direction: column;
+  z-index: 1000;
+}
+#feature-panel.open { display: flex; }
+#feature-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+#feature-panel-header button {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 16px;
+  cursor: pointer;
+}
+#feature-textarea {
+  width: 100%;
+  height: 150px;
+  background: var(--bg);
+  color: var(--text);
+  border: none;
+  padding: 10px;
+  font-size: 12px;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+}
+
 /* ── MODAL ── */
 #modal-overlay {
   display: none;
