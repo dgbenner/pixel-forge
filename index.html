@@ -294,6 +294,41 @@
   <textarea id="feature-textarea" placeholder="Describe a feature you'd like to see..."></textarea>
 </div>
 
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey: "AIzaSyBys2EdITO69ZQmr2U5Hq_WZ--1Rk9qYA0",
+    authDomain: "transmission-hypohthesis-text.firebaseapp.com",
+    databaseURL: "https://transmission-hypohthesis-text-default-rtdb.firebaseio.com",
+    projectId: "transmission-hypohthesis-text",
+    storageBucket: "transmission-hypohthesis-text.firebasestorage.app",
+    messagingSenderId: "388796078574",
+    appId: "1:388796078574:web:da811cbddb9a08303e16ff"
+  });
+  const featureRef = firebase.database().ref('pixelforge-features');
+  const featureTA = document.getElementById('feature-textarea');
+  let isRemoteUpdate = false;
+
+  featureRef.on('value', snap => {
+    const val = snap.val() || '';
+    if (document.activeElement !== featureTA) {
+      featureTA.value = val;
+    } else {
+      isRemoteUpdate = true;
+      const pos = featureTA.selectionStart;
+      featureTA.value = val;
+      featureTA.selectionStart = featureTA.selectionEnd = pos;
+      isRemoteUpdate = false;
+    }
+  });
+
+  featureTA.addEventListener('input', () => {
+    if (!isRemoteUpdate) featureRef.set(featureTA.value);
+  });
+</script>
+
 <!-- NEW DOCUMENT / RESIZE MODAL -->
 <div id="modal-overlay">
   <div id="modal">
