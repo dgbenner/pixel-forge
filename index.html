@@ -56,25 +56,25 @@
 
 <!-- OPTIONS BAR -->
 <div id="optionsbar">
-  <span id="tool-name" style="color:var(--text-bright);font-weight:600;min-width:60px;">Brush</span>
-  <div class="opt-sep"></div>
+  <span id="tool-name" style="color:var(--text-bright);font-weight:600;min-width:80px;"></span>
+  <div class="opt-sep" id="opt-sep-main"></div>
   <span id="opt-size" class="opt-group">
     <label>Size</label>
     <input type="range" id="brush-size" min="1" max="200" value="20" oninput="updateBrushSize(this.value)">
-    <input type="number" id="brush-size-num" min="1" max="200" value="20" oninput="updateBrushSize(this.value)" style="width:46px">
-    <div class="opt-sep"></div>
+    <input type="number" id="brush-size-num" min="1" max="200" value="20" oninput="updateBrushSize(this.value)">
   </span>
+  <div class="opt-sep" id="opt-sep-opacity"></div>
   <span id="opt-opacity" class="opt-group">
     <label>Opacity</label>
     <input type="range" id="brush-opacity" min="1" max="100" value="100" oninput="updateOpacity(this.value)">
-    <input type="number" id="brush-opacity-num" min="1" max="100" value="100" oninput="updateOpacity(this.value)" style="width:44px">
+    <input type="number" id="brush-opacity-num" min="1" max="100" value="100" oninput="updateOpacity(this.value)">
     <span style="color:var(--text-dim)">%</span>
-    <div class="opt-sep"></div>
   </span>
+  <div class="opt-sep" id="opt-sep-hardness"></div>
   <span id="opt-hardness" class="opt-group">
     <label id="hardness-label">Hardness</label>
     <input type="range" id="brush-hardness" min="0" max="100" value="80" oninput="updateHardness(this.value)">
-    <div class="opt-sep"></div>
+    <input type="number" id="brush-hardness-num" min="0" max="100" value="80" oninput="updateHardness(this.value)">
   </span>
   <span id="opt-hint" style="color:var(--text-dim);font-size:11px;"></span>
   <span id="extra-opts"></span>
@@ -109,10 +109,12 @@
     <div class="tool-btn" data-tool="hand" data-tip="Pan (H)" onclick="setTool('hand')">✋<span class="tool-label">Pan</span></div>
     <div class="tool-sep"></div>
     <!-- Color swatches -->
-    <div id="color-swatches">
-      <div id="bg-color-swatch" title="Background color" onclick="pickBgColor()"></div>
-      <div id="fg-color-swatch" title="Foreground color" onclick="pickFgColor()"></div>
-      <div id="swap-colors" onclick="swapColors()" title="Swap colors">⇄</div>
+    <div id="color-section">
+      <div id="color-swatches">
+        <div id="bg-color-swatch" title="Background color" onclick="pickBgColor()"></div>
+        <div id="fg-color-swatch" title="Foreground color" onclick="pickFgColor()"></div>
+      </div>
+      <div id="swap-colors" onclick="swapColors()" title="Swap colors (X)">&#8645;</div>
     </div>
   </div>
 
@@ -387,6 +389,24 @@ updateOptionsBar('brush');
 initFilterSliders();
 initTabs();
 </script>
+
+<!-- Default Statcounter code for PixelForge
+https://dgbenner.github.io/pixel-forge/ -->
+<script type="text/javascript">
+var sc_project=13210008;
+var sc_invisible=1;
+var sc_security="0fb3818a";
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js"
+async></script>
+<noscript><div class="statcounter"><a title="hit counter"
+href="https://statcounter.com/" target="_blank"><img
+class="statcounter"
+src="https://c.statcounter.com/13210008/0/0fb3818a/1/"
+alt="hit counter"
+referrerPolicy="no-referrer-when-downgrade"></a></div></noscript>
+<!-- End of Statcounter Code -->
 
 </body>
 </html>

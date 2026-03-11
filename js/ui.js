@@ -47,7 +47,8 @@ function updateOpacity(v) {
 
 function updateHardness(v) {
   state.brushHardness = +v / 100;
-  document.getElementById('brush-hardness').value = v;
+  document.getElementById('brush-hardness').value     = v;
+  document.getElementById('brush-hardness-num').value = v;
 }
 
 // ── Info panel updates ────────────────────────────────────
