@@ -5,7 +5,19 @@
 // ═══════════════════════════════════════════════════════════
 
 // ── Tool selection ───────────────────────────────────────
+function clearSelection() {
+  state.selection = null;
+  state.lassoPoints = [];
+  document.getElementById('selection-overlay').style.display = 'none';
+  octx.clearRect(0, 0, state.docW, state.docH);
+}
+
 function setTool(tool) {
+  // Clear selection only when switching to a different selection tool
+  var selTools = ['select-rect', 'select-ellipse', 'lasso'];
+  if (selTools.indexOf(tool) !== -1 && selTools.indexOf(state.currentTool) !== -1 && tool !== state.currentTool) {
+    clearSelection();
+  }
   state.currentTool = tool;
   document.querySelectorAll('.tool-btn').forEach(function(b) {
     b.classList.toggle('active', b.dataset.tool === tool);
@@ -18,8 +30,8 @@ function setTool(tool) {
 function toolLabel(t) {
   var labels = {
     brush: 'Brush', eraser: 'Eraser', fill: 'Fill',
-    'select-rect': 'Rect Select', 'select-ellipse': 'Ellipse Select',
-    lasso: 'Lasso', move: 'Move', text: 'Type',
+    'select-rect': 'Rectangle Select', 'select-ellipse': 'Ellipse Select',
+    lasso: 'Lasso Select', move: 'Move', text: 'Type',
     eyedropper: 'Eyedropper', crop: 'Crop', zoom: 'Zoom', hand: 'Hand'
   };
   return labels[t] || t;
@@ -34,11 +46,34 @@ function toolCursor(t) {
 }
 
 function updateOptionsBar(tool) {
-  var hardnessLabel  = document.getElementById('hardness-label');
-  var hardnessSlider = document.getElementById('brush-hardness');
-  var showBrush = (tool === 'brush' || tool === 'eraser');
-  hardnessLabel.style.display  = showBrush ? '' : 'none';
-  hardnessSlider.style.display = showBrush ? '' : 'none';
+  var optSize     = document.getElementById('opt-size');
+  var optOpacity  = document.getElementById('opt-opacity');
+  var optHardness = document.getElementById('opt-hardness');
+  var optHint     = document.getElementById('opt-hint');
+
+  var isBrush = (tool === 'brush' || tool === 'eraser');
+  var isText  = (tool === 'text');
+
+  // Size: brush, eraser, text (font size)
+  optSize.style.display     = (isBrush || isText) ? '' : 'none';
+  // Opacity: brush, eraser
+  optOpacity.style.display  = isBrush ? '' : 'none';
+  // Hardness: brush, eraser only
+  optHardness.style.display = isBrush ? '' : 'none';
+
+  // Contextual hints for tools with no sliders
+  var hints = {
+    'select-rect': 'Click and drag to select a rectangular area',
+    'select-ellipse': 'Click and drag to select an elliptical area',
+    'lasso': 'Click and drag to draw a freeform selection',
+    'move': 'Click and drag to move the active layer',
+    'fill': 'Click to fill area with foreground color',
+    'eyedropper': 'Click to pick a color from the canvas',
+    'crop': 'Click and drag to crop the canvas',
+    'zoom': 'Click to zoom in, Shift+click to zoom out',
+    'hand': 'Click and drag to pan the canvas'
+  };
+  optHint.textContent = hints[tool] || '';
 }
 
 // ── Canvas event handlers ────────────────────────────────
@@ -61,7 +96,20 @@ function canvasMouseDown(e) {
     renderAll();
   } else if (tool === 'fill') {
     pushHistory('Fill');
-    floodFill(pos.x, pos.y, hexToRgba(state.fgColor));
+    var layer = state.layers[state.activeLayer];
+    if (layer) {
+      var lctx = layer.canvas.getContext('2d');
+      lctx.save();
+      if (applySelectionClip(lctx)) {
+        // Fill only within selection
+        lctx.fillStyle = state.fgColor;
+        lctx.fillRect(0, 0, state.docW, state.docH);
+        lctx.restore();
+      } else {
+        lctx.restore();
+        floodFill(pos.x, pos.y, hexToRgba(state.fgColor));
+      }
+    }
     renderAll();
   } else if (tool === 'eyedropper') {
     pickColor(pos.x, pos.y);
@@ -95,9 +143,12 @@ function canvasMouseDown(e) {
       pushHistory('Text');
       var layer = state.layers[state.activeLayer];
       var lctx = layer.canvas.getContext('2d');
+      lctx.save();
+      applySelectionClip(lctx);
       lctx.fillStyle = state.fgColor;
       lctx.font = (state.brushSize * 1.5) + 'px sans-serif';
       lctx.fillText(text, pos.x, pos.y);
+      lctx.restore();
       renderAll();
     }
   } else if (tool === 'crop') {
@@ -163,7 +214,8 @@ function canvasMouseUp() {
   if (state.selecting) {
     state.selecting = false;
     if (state.currentTool === 'lasso' && state.lassoPoints.length > 2) {
-      // finalize lasso selection
+      // Auto-close the loop and draw the final closed overlay
+      drawLassoOverlay(true);
     }
     if (state.currentTool === 'crop' && state.cropRect && state.cropRect.w > 10 && state.cropRect.h > 10) {
       applyCrop(state.cropRect);
@@ -185,10 +237,41 @@ function canvasWheel(e) {
 }
 
 // ── Painting ─────────────────────────────────────────────
+function applySelectionClip(lctx) {
+  var s = state.selection;
+  if (s && s.w > 0 && s.h > 0) {
+    lctx.beginPath();
+    if (s.type === 'select-ellipse') {
+      var cx = s.x + s.w / 2;
+      var cy = s.y + s.h / 2;
+      lctx.ellipse(cx, cy, s.w / 2, s.h / 2, 0, 0, Math.PI * 2);
+    } else {
+      lctx.rect(s.x, s.y, s.w, s.h);
+    }
+    lctx.clip();
+    return true;
+  }
+  // Lasso selection
+  if (state.lassoPoints && state.lassoPoints.length > 2 && !state.selecting) {
+    lctx.beginPath();
+    lctx.moveTo(state.lassoPoints[0].x, state.lassoPoints[0].y);
+    for (var i = 1; i < state.lassoPoints.length; i++) {
+      lctx.lineTo(state.lassoPoints[i].x, state.lassoPoints[i].y);
+    }
+    lctx.closePath();
+    lctx.clip();
+    return true;
+  }
+  return false;
+}
+
 function paintAt(x0, y0, x1, y1) {
   var layer = state.layers[state.activeLayer];
   if (!layer) return;
   var lctx = layer.canvas.getContext('2d');
+
+  lctx.save();
+  applySelectionClip(lctx);
 
   if (state.currentTool === 'eraser') {
     lctx.globalCompositeOperation = 'destination-out';
@@ -223,8 +306,7 @@ function paintAt(x0, y0, x1, y1) {
     lctx.fill();
   }
 
-  lctx.globalAlpha = 1;
-  lctx.globalCompositeOperation = 'source-over';
+  lctx.restore();
 }
 
 // ── Flood fill ────────────────────────────────────────────
@@ -279,28 +361,72 @@ function floodFill(startX, startY, fillColor) {
 // ── Selection overlays ────────────────────────────────────
 function drawSelectionOverlay() {
   if (!state.selection) return;
-  var sel = document.getElementById('selection-overlay');
   var s = state.selection;
-  var z = state.zoom;
-  sel.style.display = 'block';
-  sel.style.left   = (s.x * z) + 'px';
-  sel.style.top    = (s.y * z) + 'px';
-  sel.style.width  = (s.w * z) + 'px';
-  sel.style.height = (s.h * z) + 'px';
-  sel.style.borderRadius = (s.type === 'select-ellipse') ? '50%' : '0';
+
+  // Hide the old CSS overlay
+  document.getElementById('selection-overlay').style.display = 'none';
+
+  octx.clearRect(0, 0, state.docW, state.docH);
+
+  function tracePath() {
+    octx.beginPath();
+    if (s.type === 'select-ellipse') {
+      var cx = s.x + s.w / 2;
+      var cy = s.y + s.h / 2;
+      octx.ellipse(cx, cy, s.w / 2, s.h / 2, 0, 0, Math.PI * 2);
+    } else {
+      octx.rect(s.x, s.y, s.w, s.h);
+    }
+  }
+
+  // Dark stroke (visible over light areas)
+  octx.lineWidth = 1.5;
+  octx.setLineDash([4, 4]);
+  octx.lineDashOffset = 0;
+  octx.strokeStyle = 'rgba(0,0,0,0.7)';
+  tracePath();
+  octx.stroke();
+
+  // Light stroke offset (visible over dark areas)
+  octx.lineDashOffset = 4;
+  octx.strokeStyle = 'rgba(255,255,255,0.9)';
+  tracePath();
+  octx.stroke();
+
+  octx.setLineDash([]);
+  octx.lineDashOffset = 0;
 }
 
-function drawLassoOverlay() {
+function drawLassoOverlay(closed) {
   octx.clearRect(0, 0, state.docW, state.docH);
   if (state.lassoPoints.length < 2) return;
-  octx.beginPath();
-  octx.strokeStyle = 'white';
-  octx.lineWidth = 1;
+
+  // Build the path
+  function tracePath() {
+    octx.beginPath();
+    octx.moveTo(state.lassoPoints[0].x, state.lassoPoints[0].y);
+    for (var i = 1; i < state.lassoPoints.length; i++) {
+      octx.lineTo(state.lassoPoints[i].x, state.lassoPoints[i].y);
+    }
+    if (closed) octx.closePath();
+  }
+
+  // Dark stroke first (visible over light areas)
+  octx.lineWidth = 1.5;
   octx.setLineDash([4, 4]);
-  octx.moveTo(state.lassoPoints[0].x, state.lassoPoints[0].y);
-  state.lassoPoints.forEach(function(p) { octx.lineTo(p.x, p.y); });
+  octx.lineDashOffset = 0;
+  octx.strokeStyle = 'rgba(0,0,0,0.7)';
+  tracePath();
   octx.stroke();
+
+  // Light stroke offset (visible over dark areas)
+  octx.lineDashOffset = 4;
+  octx.strokeStyle = 'rgba(255,255,255,0.9)';
+  tracePath();
+  octx.stroke();
+
   octx.setLineDash([]);
+  octx.lineDashOffset = 0;
 }
 
 function drawCropOverlay() {

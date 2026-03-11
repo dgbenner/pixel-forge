@@ -34,7 +34,8 @@ function initDocument(w, h, bgColor) {
   pushHistory('New Document');
   updateInfoPanel();
   document.getElementById('status-size').textContent = w + ' \u00D7 ' + h + ' px';
-  document.getElementById('status-doc').textContent = 'Untitled-1';
+  var tabTitle = (typeof docTabs !== 'undefined' && docTabs[activeTab]) ? docTabs[activeTab].title : 'Untitled-1';
+  document.getElementById('status-doc').textContent = tabTitle;
 }
 
 function createLayer(name, w, h) {

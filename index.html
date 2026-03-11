@@ -14,9 +14,12 @@
   <div class="menu-item" id="menu-file">File
     <div class="dropdown">
       <div class="dd-item" onclick="newDocument()">New… <span class="shortcut">⌘N</span></div>
-      <div class="dd-item" onclick="openFile()">Open… <span class="shortcut">⌘O</span></div>
+      <div class="dd-item" onclick="openFile()">Open Image… <span class="shortcut">⌘O</span></div>
+      <div class="dd-item" onclick="openProject()">Open Project…</div>
       <div class="dd-sep"></div>
-      <div class="dd-item" onclick="saveAsPNG()">Export PNG <span class="shortcut">⌘S</span></div>
+      <div class="dd-item" onclick="saveProject()">Save Project to Computer (.pfg) <span class="shortcut">⌘S</span></div>
+      <div class="dd-sep"></div>
+      <div class="dd-item" onclick="saveAsPNG()">Export PNG</div>
       <div class="dd-item" onclick="saveAsJPEG()">Export JPEG</div>
     </div>
   </div>
@@ -55,24 +58,32 @@
 <div id="optionsbar">
   <span id="tool-name" style="color:var(--text-bright);font-weight:600;min-width:60px;">Brush</span>
   <div class="opt-sep"></div>
-  <label>Size</label>
-  <input type="range" id="brush-size" min="1" max="200" value="20" oninput="updateBrushSize(this.value)">
-  <input type="number" id="brush-size-num" min="1" max="200" value="20" oninput="updateBrushSize(this.value)" style="width:46px">
-  <div class="opt-sep"></div>
-  <label>Opacity</label>
-  <input type="range" id="brush-opacity" min="1" max="100" value="100" oninput="updateOpacity(this.value)">
-  <input type="number" id="brush-opacity-num" min="1" max="100" value="100" oninput="updateOpacity(this.value)" style="width:44px">
-  <span style="color:var(--text-dim)">%</span>
-  <div class="opt-sep"></div>
-  <label id="hardness-label">Hardness</label>
-  <input type="range" id="brush-hardness" min="0" max="100" value="80" oninput="updateHardness(this.value)">
-  <div class="opt-sep"></div>
+  <span id="opt-size" class="opt-group">
+    <label>Size</label>
+    <input type="range" id="brush-size" min="1" max="200" value="20" oninput="updateBrushSize(this.value)">
+    <input type="number" id="brush-size-num" min="1" max="200" value="20" oninput="updateBrushSize(this.value)" style="width:46px">
+    <div class="opt-sep"></div>
+  </span>
+  <span id="opt-opacity" class="opt-group">
+    <label>Opacity</label>
+    <input type="range" id="brush-opacity" min="1" max="100" value="100" oninput="updateOpacity(this.value)">
+    <input type="number" id="brush-opacity-num" min="1" max="100" value="100" oninput="updateOpacity(this.value)" style="width:44px">
+    <span style="color:var(--text-dim)">%</span>
+    <div class="opt-sep"></div>
+  </span>
+  <span id="opt-hardness" class="opt-group">
+    <label id="hardness-label">Hardness</label>
+    <input type="range" id="brush-hardness" min="0" max="100" value="80" oninput="updateHardness(this.value)">
+    <div class="opt-sep"></div>
+  </span>
+  <span id="opt-hint" style="color:var(--text-dim);font-size:11px;"></span>
   <span id="extra-opts"></span>
 </div>
 
 <!-- TABS BAR -->
 <div id="tabsbar">
-  <div class="canvas-tab active" id="tab-0">Untitled-1</div>
+  <div class="canvas-tab active" data-tab="0" style="padding-right:14px">Untitled-1</div>
+  <div id="tab-add" onclick="newTab()" title="New document (max 3)">+</div>
 </div>
 
 <!-- MAIN AREA -->
@@ -80,19 +91,20 @@
 
   <!-- LEFT TOOLBAR -->
   <div id="toolbar">
+    <div class="tool-btn" data-tool="move" data-tip="Move (V)" onclick="setTool('move')"><span style="font-size:150%">✥</span><span class="tool-label">Move</span></div>
+    <div class="tool-sep"></div>
     <div class="tool-btn active" data-tool="brush" data-tip="Brush (B)" onclick="setTool('brush')">🖌️<span class="tool-label">Brush</span></div>
     <div class="tool-btn" data-tool="eraser" data-tip="Eraser (E)" onclick="setTool('eraser')">🧹<span class="tool-label">Eraser</span></div>
     <div class="tool-btn" data-tool="fill" data-tip="Fill (G)" onclick="setTool('fill')">🪣<span class="tool-label">Fill</span></div>
     <div class="tool-sep"></div>
-    <div class="tool-btn" data-tool="select-rect" data-tip="Rectangular Select (M)" onclick="setTool('select-rect')">⬜<span class="tool-label">Rect Sel</span></div>
-    <div class="tool-btn" data-tool="select-ellipse" data-tip="Elliptical Select" onclick="setTool('select-ellipse')">◯<span class="tool-label">Ellipse</span></div>
-    <div class="tool-btn" data-tool="lasso" data-tip="Lasso" onclick="setTool('lasso')">🔲<span class="tool-label">Lasso</span></div>
+    <div class="tool-btn" data-tool="select-rect" data-tip="Rectangular Select (M)" onclick="setTool('select-rect')"><span style="font-size:150%">□</span><span class="tool-label">Rect Sel</span></div>
+    <div class="tool-btn" data-tool="select-ellipse" data-tip="Elliptical Select" onclick="setTool('select-ellipse')"><span style="font-size:150%">◯</span><span class="tool-label">Ellipse</span></div>
+    <div class="tool-btn" data-tool="lasso" data-tip="Lasso" onclick="setTool('lasso')">🐴<span class="tool-label">Lasso</span></div>
     <div class="tool-sep"></div>
-    <div class="tool-btn" data-tool="move" data-tip="Move (V)" onclick="setTool('move')">✥<span class="tool-label">Move</span></div>
     <div class="tool-btn" data-tool="text" data-tip="Text (T)" onclick="setTool('text')">T<span class="tool-label">Text</span></div>
-    <div class="tool-btn" data-tool="eyedropper" data-tip="Eyedropper (I)" onclick="setTool('eyedropper')">🔬<span class="tool-label">Picker</span></div>
+    <div class="tool-btn" data-tool="eyedropper" data-tip="Eyedropper (I)" onclick="setTool('eyedropper')">🎨<span class="tool-label">Picker</span></div>
     <div class="tool-sep"></div>
-    <div class="tool-btn" data-tool="crop" data-tip="Crop (C)" onclick="setTool('crop')">⌗<span class="tool-label">Crop</span></div>
+    <div class="tool-btn" data-tool="crop" data-tip="Crop (C)" onclick="setTool('crop')"><span style="font-size:150%">⌗</span><span class="tool-label">Crop</span></div>
     <div class="tool-btn" data-tool="zoom" data-tip="Zoom (Z)" onclick="setTool('zoom')">🔍<span class="tool-label">Zoom</span></div>
     <div class="tool-btn" data-tool="hand" data-tip="Pan (H)" onclick="setTool('hand')">✋<span class="tool-label">Pan</span></div>
     <div class="tool-sep"></div>
@@ -373,6 +385,7 @@ updateColorUI();
 setTool('brush');
 updateOptionsBar('brush');
 initFilterSliders();
+initTabs();
 </script>
 
 </body>

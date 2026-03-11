@@ -4,6 +4,12 @@
 //  image adjustments, modals, brush controls, info panel.
 // ═══════════════════════════════════════════════════════════
 
+// ── Warn before closing ──────────────────────────────────
+window.addEventListener('beforeunload', function(e) {
+  e.preventDefault();
+  e.returnValue = 'You have unsaved work in PixelForge. Use File > Save Project to save a .pfg file to your computer.';
+});
+
 // ── Menu bar ─────────────────────────────────────────────
 function closeMenus() {
   document.querySelectorAll('.menu-item').forEach(function(m) {
@@ -189,6 +195,118 @@ function saveAsJPEG() {
   a.click();
 }
 
+// ── Save / Open Project (.pfg) ───────────────────────────
+function saveProject() {
+  closeMenus();
+  var project = {
+    version: 1,
+    docW: state.docW,
+    docH: state.docH,
+    fgColor: state.fgColor,
+    bgColor: state.bgColor,
+    activeLayer: state.activeLayer,
+    title: (docTabs[activeTab] && docTabs[activeTab].title) || 'Untitled-1',
+    layers: state.layers.map(function(l) {
+      return {
+        name: l.name,
+        visible: l.visible,
+        opacity: l.opacity,
+        blendMode: l.blendMode,
+        data: l.canvas.toDataURL('image/png')
+      };
+    })
+  };
+  var json = JSON.stringify(project);
+  var blob = new Blob([json], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.download = (project.title || 'project') + '.pfg';
+  a.href = URL.createObjectURL(blob);
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function openProject() {
+  closeMenus();
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.pfg';
+  input.onchange = function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        var project = JSON.parse(ev.target.result);
+        loadProject(project, file.name);
+      } catch (err) {
+        alert('Could not read project file: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function loadProject(project, filename) {
+  var w = project.docW || 1280;
+  var h = project.docH || 720;
+
+  // Reset document
+  state.docW = w; state.docH = h;
+  mainCanvas.width = w;   mainCanvas.height = h;
+  overlayCanvas.width = w; overlayCanvas.height = h;
+  cursorCanvas.width = w;  cursorCanvas.height = h;
+  state.fgColor = project.fgColor || '#000000';
+  state.bgColor = project.bgColor || '#ffffff';
+  state.layers = [];
+  state.history = [];
+  state.historyIndex = -1;
+  state.selection = null;
+
+  // Load layers from base64 data
+  var loaded = 0;
+  var total = project.layers.length;
+
+  project.layers.forEach(function(ld, i) {
+    var img = new Image();
+    img.onload = function() {
+      var c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0);
+      state.layers[i] = {
+        canvas: c,
+        name: ld.name,
+        visible: ld.visible !== false,
+        opacity: ld.opacity != null ? ld.opacity : 1.0,
+        blendMode: ld.blendMode || 'source-over'
+      };
+      loaded++;
+      if (loaded === total) finishLoad();
+    };
+    img.src = ld.data;
+  });
+
+  function finishLoad() {
+    state.activeLayer = Math.min(project.activeLayer || 0, state.layers.length - 1);
+    var title = project.title || filename.replace('.pfg', '');
+
+    // Update current tab
+    if (docTabs[activeTab]) docTabs[activeTab].title = title;
+    document.getElementById('status-doc').textContent = title;
+    document.getElementById('status-size').textContent = w + ' \u00D7 ' + h + ' px';
+    document.getElementById('fg-color-swatch').style.backgroundColor = state.fgColor;
+    document.getElementById('bg-color-swatch').style.backgroundColor = state.bgColor;
+
+    fitToView();
+    renderAll();
+    updateLayersPanel();
+    pushHistory('Open Project');
+    updateInfoPanel();
+    saveCurrentTab();
+    renderTabs();
+  }
+}
+
 // ── Modal / New Document / Resize ────────────────────────
 var modalCallback = null;
 
@@ -259,7 +377,7 @@ document.addEventListener('keydown', function(e) {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   var key = e.key.toLowerCase();
   if ((e.metaKey || e.ctrlKey) && key === 'z') { e.shiftKey ? redo() : undo(); e.preventDefault(); return; }
-  if ((e.metaKey || e.ctrlKey) && key === 's') { e.preventDefault(); saveAsPNG(); return; }
+  if ((e.metaKey || e.ctrlKey) && key === 's') { e.preventDefault(); saveProject(); return; }
   if ((e.metaKey || e.ctrlKey) && key === 'n') { e.preventDefault(); newDocument(); return; }
   if ((e.metaKey || e.ctrlKey) && key === 'o') { e.preventDefault(); openFile(); return; }
   var toolKeys = { b:'brush', e:'eraser', g:'fill', m:'select-rect', v:'move', t:'text', i:'eyedropper', c:'crop', z:'zoom', h:'hand' };
