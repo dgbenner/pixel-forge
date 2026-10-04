@@ -19,7 +19,9 @@ pixel-forge/
 │   ├── history.js      Undo/redo stack with full canvas snapshots
 │   ├── color.js        Color picker, RGB sliders, hex input, swatches
 │   ├── filters.js      Filters panel: blur, sharpen, hue, saturation
-│   └── ui.js           Menus, keyboard shortcuts, file I/O, image adjustments
+│   ├── ui.js           Menus, keyboard shortcuts, file I/O, image adjustments
+│   ├── agent-tools.js  Tools the agent can call (definitions + the code that runs them)
+│   └── agent.js        Agent loop, Agent panel, run log
 └── image-editor.html   Original single-file source (kept for reference)
 ```
 
@@ -37,6 +39,8 @@ Scripts are loaded via `<script>` tags at the bottom of `index.html` in dependen
 | 6 | `color.js` | state |
 | 7 | `filters.js` | state, canvas, history |
 | 8 | `ui.js` | everything |
+| 9 | `agent-tools.js` | everything above |
+| 10 | `agent.js` | agent-tools |
 
 All files use plain global functions and the single shared `state` object — no ES modules, no bundler required.
 
@@ -86,6 +90,71 @@ New module added during modularisation (see Filters Panel section below).
 - `openFile`, `loadImageFile`, `saveAsPNG`, `saveAsJPEG` — file I/O.
 - `newDocument`, `resizeCanvas`, `modalOK`, `closeModal` — modal dialog management.
 - Global `keydown` listener for keyboard shortcuts (B/E/G/M/V/T/I/C/Z/H, ⌘Z, ⌘S, ⌘N, ⌘O, [ ], X, Delete).
+
+---
+
+## Agent
+
+The Agent panel (top of the right sidebar) takes a request such as "make this a moody film
+still". A model edits the open image by calling PixelForge's own operations as tools; it
+never generates pixels. The browser runs every tool. The model only asks for them.
+
+```
+request → model asks for a tool → browser runs it → result (text or canvas image) goes back
+        → model asks for the next tool … → model says it's done
+```
+
+- **Proxy.** Requests go to `AGENT_ENDPOINT` (top of `js/agent.js`), a separate Vercel
+  project at `Sites/pixelforge-agent`. It holds the API key, checks the passphrase typed into
+  the panel, and pins the model (`claude-sonnet-5-5`), `max_tokens` and effort. No key is in
+  this repo.
+- **Tools** (`js/agent-tools.js`): `get_document_info`, `get_canvas`, `duplicate_layer`,
+  `add_layer`, `add_gradient_layer`, `add_text`, `set_layer_props`, `apply_adjustments`,
+  `apply_effect` (pixelate, posterize, grain, grayscale, invert), `color_balance`,
+  `delete_layer`. They address layers by name, validate before changing anything, return the
+  layer list on success, return plain errors otherwise, and ignore selections. Each pixel
+  operation is a `*Core` function shared with the menus.
+- **Your layers are protected.** `apply_adjustments`, `color_balance` and `apply_effect` only
+  edit layers the agent created this run. On any other layer they return "This layer existed
+  before the run; duplicate it first and edit the copy."
+- **Style reference.** The Agent panel's "Reference image…" picker holds an image in memory
+  (downscaled to 800px). It's sent with the first message as the style target, the agent can
+  call `get_reference` to see it again, and the critic scores how closely color, contrast,
+  tone and mood match it while the subject stays the same. It is never edited or added as a
+  layer. With a reference set, the request can be left empty. The run log records its
+  filename (`reference`).
+- **Delete permission.** `delete_layer` works only on layers the agent created in the current
+  run (tracked as layer objects in `runCreatedLayers`, so renaming can't get around it).
+  Your own layers can only be hidden.
+- **Fonts.** `add_text` uses six Google Fonts loaded in `index.html` and waits for the font
+  before drawing. If a font can't load, the tool returns an error instead of drawing in a
+  fallback font.
+- **History.** Every agent change is one History entry labelled `Agent · …`, pushed after
+  the change.
+- **Critic.** Before finishing, the agent must call `request_review`. A second model call
+  (`claude-haiku-4-5`, temperature 0, prompt pinned in the proxy) sees only the original
+  request, the starting image and the current image, never the agent's reasoning, and returns
+  a score from 1 to 10 plus one sentence of critique. 7 or higher passes. Below 7, the critique
+  goes back to the agent. The loop holds the agent to this: finishing without a passing review
+  of the current image sends it back. Max 3 reviews per run; then the run stops with the last
+  score. If the critic can't be reached, the agent may finish unreviewed and says so. Scores,
+  critiques and critic tokens appear in the step log and the run log (`reviews`,
+  `final_score`).
+- **Revert run** restores a snapshot taken when the run started (not from History, which is
+  capped at 30 entries).
+- **Save run** downloads the run log as JSON: per-step timing, token usage, model text, tool
+  calls and results, stop reason, totals, and the final image.
+- **Limits.** 15 steps per run. Only the 2 most recent canvas images are resent to the model.
+- **Cost.** Set `PRICE_IN` / `PRICE_OUT` (USD per million tokens) in `js/agent.js` to show
+  cost in the panel.
+
+### Known inconsistency: history ordering
+
+The original menu adjustments (`applyGrayscale`, `applyInvert`, `applyBrightness`,
+`fillSelection`, `clearLayer`, `applyFilters`) call `pushHistory` *before* changing pixels.
+`addLayer` and the layer operations call it *after*. `setBlendMode` and `setLayerOpacity`
+don't call it at all. Agent tools and the new Pixelate / Posterize menu items push *after*.
+The old functions are left as they are for now.
 
 ---
 

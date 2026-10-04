@@ -13,6 +13,7 @@ function pushHistory(name) {
     return {
       canvas:    c,
       name:      layer.name,
+      text:      layer.text || null,
       visible:   layer.visible,
       opacity:   layer.opacity,
       blendMode: layer.blendMode
@@ -49,6 +50,7 @@ function restoreHistory(idx) {
     return {
       canvas:    c,
       name:      sl.name,
+      text:      sl.text || null,
       visible:   sl.visible,
       opacity:   sl.opacity,
       blendMode: sl.blendMode

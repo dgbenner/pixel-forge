@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PixelForge — Image Editor</title>
 <link rel="stylesheet" href="css/style.css">
+<!-- Fonts for the agent's add_text tool -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter&family=Playfair+Display&family=Press+Start+2P&family=Shrikhand&family=Space+Mono&display=swap">
 </head>
 <body>
 
@@ -40,12 +44,18 @@
       <div class="dd-item" onclick="applyGrayscale()">Grayscale</div>
       <div class="dd-item" onclick="applyInvert()">Invert</div>
       <div class="dd-item" onclick="applyBrightness()">Brightness / Contrast…</div>
+      <div class="dd-sep"></div>
+      <div class="dd-item" onclick="applyPixelate()">Pixelate…</div>
+      <div class="dd-item" onclick="applyPosterize()">Posterize…</div>
+      <div class="dd-item" onclick="applyGrain()">Add Grain…</div>
+      <div class="dd-item" onclick="colorBalanceDialog()">Color Balance…</div>
     </div>
   </div>
   <div class="menu-item" id="menu-layer">Layer
     <div class="dropdown">
       <div class="dd-item" onclick="addLayer()">New Layer <span class="shortcut">⇧⌘N</span></div>
       <div class="dd-item" onclick="duplicateLayer()">Duplicate Layer</div>
+      <div class="dd-item" onclick="gradientLayerDialog()">New Gradient Layer…</div>
       <div class="dd-item" onclick="deleteLayer()">Delete Layer</div>
       <div class="dd-sep"></div>
       <div class="dd-item" onclick="mergeDown()">Merge Down <span class="shortcut">⌘E</span></div>
@@ -133,10 +143,47 @@
       <div id="selection-overlay"></div>
     </div>
     <div id="zoom-indicator">100%</div>
+    <div id="drop-hint">Drop image to add as a new layer</div>
   </div>
 
   <!-- RIGHT PANELS -->
   <div id="panels">
+
+    <!-- Agent -->
+    <div class="panel" id="panel-agent">
+      <div class="panel-header" onclick="togglePanel('agent')">
+        <span>Agent</span><span class="arrow">▾</span>
+      </div>
+      <div class="panel-body">
+        <textarea id="agent-request" placeholder="e.g. make this a moody film still (⌘↩ to run)"></textarea>
+        <input type="text" id="agent-pass" placeholder="Passphrase" autocomplete="off" spellcheck="false">
+        <label class="agent-toggle" title="A second model grades the result against your request before the agent may finish">
+          <input type="checkbox" id="agent-critic" checked> Critic
+        </label>
+        <div id="agent-ref" title="A style to match: color, contrast, tone and mood. Never edited or added to the document.">
+          <div id="agent-ref-empty">
+            <div class="filter-reset-btn" onclick="document.getElementById('agent-ref-input').click()">Reference image…</div>
+          </div>
+          <div id="agent-ref-set" style="display:none">
+            <img id="agent-ref-thumb" alt="Style reference">
+            <span id="agent-ref-name"></span>
+            <span id="agent-ref-clear" onclick="agentReferenceCleared()" title="Remove reference">&times;</span>
+          </div>
+          <input type="file" id="agent-ref-input" accept="image/*" style="display:none" onchange="agentReferenceChosen(event)">
+        </div>
+        <div class="agent-actions">
+          <div class="filter-apply-btn" id="agent-run" onclick="agentRunClicked()">Run</div>
+          <div class="filter-reset-btn" id="agent-stop" onclick="agentStopClicked()">Stop</div>
+        </div>
+        <div class="agent-actions">
+          <div class="filter-reset-btn" id="agent-revert" onclick="agentRevertClicked()">Revert run</div>
+          <div class="filter-reset-btn" id="agent-save" onclick="agentSaveClicked()">Save run</div>
+          <div class="filter-reset-btn" id="agent-copy" onclick="agentCopyClicked()">Copy log</div>
+        </div>
+        <div id="agent-log"></div>
+        <div id="agent-totals"></div>
+      </div>
+    </div>
 
     <!-- Layers -->
     <div class="panel" id="panel-layers">
@@ -369,6 +416,8 @@
     6. color   — color picker, swatches (needs state)
     7. filters — filter sliders and application (needs state, canvas, history)
     8. ui      — menus, keyboard, file ops, adjustments (needs everything)
+    9. agent-tools — tools the agent can call (needs everything above)
+   10. agent   — agent loop, panel, run log (needs agent-tools)
 -->
 <script src="js/state.js"></script>
 <script src="js/canvas.js"></script>
@@ -378,6 +427,8 @@
 <script src="js/color.js"></script>
 <script src="js/filters.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/agent-tools.js"></script>
+<script src="js/agent.js"></script>
 
 <script>
 // ── Bootstrap ─────────────────────────────────────────────
@@ -388,6 +439,7 @@ setTool('brush');
 updateOptionsBar('brush');
 initFilterSliders();
 initTabs();
+initAgentPanel();
 </script>
 
 <!-- Default Statcounter code for PixelForge

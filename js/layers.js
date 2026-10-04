@@ -19,6 +19,7 @@ function duplicateLayer() {
   dup.canvas.getContext('2d').drawImage(src.canvas, 0, 0);
   dup.opacity = src.opacity;
   dup.blendMode = src.blendMode;
+  dup.text = src.text;
   state.layers.splice(state.activeLayer, 0, dup);
   renderAll();
   updateLayersPanel();
@@ -70,6 +71,29 @@ function flattenImage() {
   renderAll();
   updateLayersPanel();
   pushHistory('Flatten Image');
+}
+
+// Fill a layer with a gradient. opts: { type: 'radial'|'linear', colorStart, colorEnd
+// (#rrggbb), opacityStart, opacityEnd (0–100), angle (deg, linear; 0 = left→right,
+// 90 = top→bottom), innerRadius (% of half-diagonal where a radial fade starts) }
+function gradientFillCore(layer, opts) {
+  var w = layer.canvas.width, h = layer.canvas.height;
+  var cx = w / 2, cy = h / 2, grad;
+  if (opts.type === 'radial') {
+    var outer = Math.sqrt(cx * cx + cy * cy);
+    grad = layer.canvas.getContext('2d').createRadialGradient(cx, cy, outer * opts.innerRadius / 100, cx, cy, outer);
+  } else {
+    var a = opts.angle * Math.PI / 180, dx = Math.cos(a), dy = Math.sin(a);
+    var half = Math.abs(cx * dx) + Math.abs(cy * dy); // reaches the farthest corner
+    grad = layer.canvas.getContext('2d').createLinearGradient(cx - dx * half, cy - dy * half, cx + dx * half, cy + dy * half);
+  }
+  var rgba = function(hex, op) { var c = hexToRgb(hex); return 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + (op / 100) + ')'; };
+  grad.addColorStop(0, rgba(opts.colorStart, opts.opacityStart));
+  grad.addColorStop(1, rgba(opts.colorEnd, opts.opacityEnd));
+  var lctx = layer.canvas.getContext('2d');
+  lctx.clearRect(0, 0, w, h);
+  lctx.fillStyle = grad;
+  lctx.fillRect(0, 0, w, h);
 }
 
 function setBlendMode(mode) {

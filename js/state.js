@@ -53,7 +53,7 @@ function snapshotLayers(layers) {
     var c = document.createElement('canvas');
     c.width = l.canvas.width; c.height = l.canvas.height;
     c.getContext('2d').drawImage(l.canvas, 0, 0);
-    return { canvas: c, name: l.name, visible: l.visible, opacity: l.opacity, blendMode: l.blendMode };
+    return { canvas: c, name: l.name, visible: l.visible, opacity: l.opacity, blendMode: l.blendMode, text: l.text || null };
   });
 }
 
@@ -66,7 +66,7 @@ function snapshotHistory(history) {
         var c = document.createElement('canvas');
         c.width = l.canvas.width; c.height = l.canvas.height;
         c.getContext('2d').drawImage(l.canvas, 0, 0);
-        return { canvas: c, name: l.name, visible: l.visible, opacity: l.opacity, blendMode: l.blendMode };
+        return { canvas: c, name: l.name, visible: l.visible, opacity: l.opacity, blendMode: l.blendMode, text: l.text || null };
       })
     };
   });

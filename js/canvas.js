@@ -41,7 +41,7 @@ function initDocument(w, h, bgColor) {
 function createLayer(name, w, h) {
   var c = document.createElement('canvas');
   c.width = w; c.height = h;
-  return { canvas: c, name: name, visible: true, opacity: 1.0, blendMode: 'source-over' };
+  return { canvas: c, name: name, visible: true, opacity: 1.0, blendMode: 'source-over', text: null };
 }
 
 // ── Viewport ─────────────────────────────────────────────

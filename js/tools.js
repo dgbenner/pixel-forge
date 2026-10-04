@@ -46,34 +46,40 @@ function toolCursor(t) {
 }
 
 function updateOptionsBar(tool) {
-  var optSize     = document.getElementById('opt-size');
-  var optOpacity  = document.getElementById('opt-opacity');
-  var optHardness = document.getElementById('opt-hardness');
-  var optHint     = document.getElementById('opt-hint');
+  var optSize        = document.getElementById('opt-size');
+  var optOpacity     = document.getElementById('opt-opacity');
+  var optHardness    = document.getElementById('opt-hardness');
+  var optSepMain     = document.getElementById('opt-sep-main');
+  var optSepOpacity  = document.getElementById('opt-sep-opacity');
+  var optSepHardness = document.getElementById('opt-sep-hardness');
+  var optHint        = document.getElementById('opt-hint');
+
+  var show = function(el) { el.style.display = ''; };
+  var hide = function(el) { el.style.display = 'none'; };
 
   var isBrush = (tool === 'brush' || tool === 'eraser');
   var isText  = (tool === 'text');
+  var hasControls = isBrush || isText;
 
-  // Size: brush, eraser, text (font size)
-  optSize.style.display     = (isBrush || isText) ? '' : 'none';
-  // Opacity: brush, eraser
-  optOpacity.style.display  = isBrush ? '' : 'none';
-  // Hardness: brush, eraser only
-  optHardness.style.display = isBrush ? '' : 'none';
+  (isBrush || isText) ? show(optSize)        : hide(optSize);
+  isBrush             ? show(optOpacity)     : hide(optOpacity);
+  isBrush             ? show(optHardness)    : hide(optHardness);
+  hasControls         ? show(optSepMain)     : hide(optSepMain);
+  isBrush             ? show(optSepOpacity)  : hide(optSepOpacity);
+  isBrush             ? show(optSepHardness) : hide(optSepHardness);
 
-  // Contextual hints for tools with no sliders
   var hints = {
-    'select-rect': 'Click and drag to select a rectangular area',
+    'select-rect':    'Click and drag to select a rectangular area',
     'select-ellipse': 'Click and drag to select an elliptical area',
-    'lasso': 'Click and drag to draw a freeform selection',
-    'move': 'Click and drag to move the active layer',
-    'fill': 'Click to fill area with foreground color',
-    'eyedropper': 'Click to pick a color from the canvas',
-    'crop': 'Click and drag to crop the canvas',
-    'zoom': 'Click to zoom in, Shift+click to zoom out',
-    'hand': 'Click and drag to pan the canvas'
+    'lasso':          'Click and drag to draw a freeform selection',
+    'move':           'Click and drag to move the active layer',
+    'fill':           'Click to fill area with foreground color',
+    'eyedropper':     'Click to pick a color from the canvas',
+    'crop':           'Click and drag to crop the canvas',
+    'zoom':           'Click to zoom in, Shift+click to zoom out',
+    'hand':           'Click and drag to pan the canvas'
   };
-  optHint.textContent = hints[tool] || '';
+  optHint.textContent = (!hasControls ? hints[tool] : '') || '';
 }
 
 // ── Canvas event handlers ────────────────────────────────
@@ -138,19 +144,9 @@ function canvasMouseDown(e) {
     }
     applyTransform();
   } else if (tool === 'text') {
-    var text = prompt('Enter text:');
-    if (text) {
-      pushHistory('Text');
-      var layer = state.layers[state.activeLayer];
-      var lctx = layer.canvas.getContext('2d');
-      lctx.save();
-      applySelectionClip(lctx);
-      lctx.fillStyle = state.fgColor;
-      lctx.font = (state.brushSize * 1.5) + 'px sans-serif';
-      lctx.fillText(text, pos.x, pos.y);
-      lctx.restore();
-      renderAll();
-    }
+    var hit = textLayerAt(pos.x, pos.y);
+    if (hit) editTextLayer(hit);
+    else textDialog(null, pos);
   } else if (tool === 'crop') {
     state.cropStart = pos;
     state.cropRect = null;
@@ -484,3 +480,128 @@ function pickColor(x, y) {
   state.fgColor = hex;
   updateColorUI();
 }
+
+// ── Text drawing (Text tool + agent add_text) ─────────────
+// opts: { font (family name or generic), size (px), color, align ('left'|'center'|'right'),
+//         baseline (canvas textBaseline, default 'alphabetic') }
+// Returns the drawn bounds { left, right, top, bottom } in document px.
+function drawTextCore(lctx, text, x, y, opts) {
+  var generic = /^(serif|sans-serif|monospace|cursive|fantasy)$/.test(opts.font);
+  lctx.font = opts.size + 'px ' + (generic ? opts.font : '"' + opts.font + '"');
+  lctx.fillStyle = opts.color;
+  lctx.textAlign = opts.align || 'left';
+  lctx.textBaseline = opts.baseline || 'alphabetic';
+  lctx.fillText(text, x, y);
+  var m = lctx.measureText(text);
+  return {
+    left: x - m.actualBoundingBoxLeft, right: x + m.actualBoundingBoxRight,
+    top: y - m.actualBoundingBoxAscent, bottom: y + m.actualBoundingBoxDescent
+  };
+}
+
+// ── Editable text layers ──────────────────────────────────
+// A text layer keeps layer.text = { content, font, size, color, x, y, align,
+// baseline, bounds } and is redrawn from it when edited. If its pixels no longer
+// match that record (painted on, filtered), it is treated as plain pixels.
+var TEXT_FONTS = ['sans-serif', 'Shrikhand', 'Bebas Neue', 'Playfair Display', 'Space Mono', 'Inter', 'Press Start 2P'];
+
+function renderTextLayer(layer, t) {
+  var lctx = layer.canvas.getContext('2d');
+  lctx.clearRect(0, 0, layer.canvas.width, layer.canvas.height);
+  lctx.save();
+  var b = drawTextCore(lctx, t.content, t.x, t.y, t);
+  lctx.restore();
+  layer.text = Object.assign({}, t, { bounds: b });
+  return b;
+}
+
+// Wait for a web font so the first draw isn't in a fallback font
+async function loadTextFont(t) {
+  if (/^(serif|sans-serif|monospace)$/.test(t.font)) return true;
+  var spec = t.size + 'px "' + t.font + '"';
+  try { await document.fonts.load(spec, t.content); } catch (e) { return false; }
+  return document.fonts.check(spec, t.content);
+}
+
+// Topmost visible text layer whose text box contains the point
+function textLayerAt(x, y) {
+  for (var i = 0; i < state.layers.length; i++) {
+    var l = state.layers[i];
+    if (!l.visible || !l.text || !l.text.bounds) continue;
+    var b = l.text.bounds, pad = 6;
+    if (x >= b.left - pad && x <= b.right + pad && y >= b.top - pad && y <= b.bottom + pad) return l;
+  }
+  return null;
+}
+
+// True if the layer's pixels are what its text record draws. Allows a few
+// levels of drift, since saving a project through PNG can nudge edge pixels.
+function textLayerUntouched(layer) {
+  var tmp = createLayer('', layer.canvas.width, layer.canvas.height);
+  renderTextLayer(tmp, layer.text);
+  var a = layer.canvas.getContext('2d').getImageData(0, 0, tmp.canvas.width, tmp.canvas.height).data;
+  var b = tmp.canvas.getContext('2d').getImageData(0, 0, tmp.canvas.width, tmp.canvas.height).data;
+  for (var i = 0; i < a.length; i++) if (Math.abs(a[i] - b[i]) > 4) return false;
+  return true;
+}
+
+async function editTextLayer(layer) {
+  if (!(await loadTextFont(layer.text))) {
+    alert("The font '" + layer.text.font + "' couldn't load, so this text can't be edited right now.");
+    return;
+  }
+  if (!textLayerUntouched(layer)) {
+    alert("'" + layer.name + "' has been painted on or filtered since the text was added, " +
+      'so it can no longer be re-edited without losing those changes.');
+    return;
+  }
+  textDialog(layer, null);
+}
+
+// New text (layer null, at pos) or edit an existing text layer
+function textDialog(layer, pos) {
+  var t = layer ? layer.text : {
+    content: '', font: 'sans-serif', size: Math.round(state.brushSize * 1.5),
+    color: state.fgColor, x: pos.x, y: pos.y, align: 'left', baseline: 'alphabetic'
+  };
+  var esc = function(v) { return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
+  document.getElementById('modal-title').textContent = layer ? 'Edit Text' : 'Add Text';
+  document.getElementById('modal-ok').textContent    = layer ? 'Update' : 'Add';
+  document.getElementById('modal-body').innerHTML = [
+    '<div class="modal-field"><label>Text</label><input type="text" id="tx-content" value="' + esc(t.content) + '"></div>',
+    '<div class="modal-field"><label>Font</label><select id="tx-font">' + TEXT_FONTS.map(function(f) {
+      return '<option value="' + f + '"' + (f === t.font ? ' selected' : '') + '>' + f + '</option>';
+    }).join('') + '</select></div>',
+    '<div class="modal-field"><label>Size</label><input type="number" id="tx-size" min="4" max="400" value="' + t.size + '"></div>',
+    '<div class="modal-field"><label>Color</label><input type="color" id="tx-color" value="' + t.color + '"></div>'
+  ].join('');
+  var input = document.getElementById('tx-content');
+  input.addEventListener('keydown', function(e) { if (e.key === 'Enter') modalOK(); });
+
+  modalCallback = async function() {
+    var next = Object.assign({}, t, {
+      content: document.getElementById('tx-content').value,
+      font:    document.getElementById('tx-font').value,
+      size:    Math.max(4, Math.min(400, +document.getElementById('tx-size').value || t.size)),
+      color:   document.getElementById('tx-color').value
+    });
+    if (!next.content.trim()) return;
+    if (!(await loadTextFont(next))) { alert("The font '" + next.font + "' couldn't load. Check the connection or pick another."); return; }
+    var target = layer;
+    if (!target) {
+      target = createLayer('Text: ' + next.content.slice(0, 20), state.docW, state.docH);
+      state.layers.splice(state.activeLayer, 0, target); // directly above the selected layer
+    } else {
+      target.name = 'Text: ' + next.content.slice(0, 20);
+    }
+    renderTextLayer(target, next);
+    state.activeLayer = state.layers.indexOf(target);
+    renderAll();
+    updateLayersPanel();
+    pushHistory(layer ? 'Edit Text' : 'Text');
+  };
+  document.getElementById('modal-overlay').classList.add('open');
+  input.focus();
+  input.select();
+}
+

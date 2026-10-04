@@ -53,21 +53,7 @@ function applyFilters() {
   var w = layer.canvas.width, h = layer.canvas.height;
 
   // 1. Hue rotation + saturation via offscreen canvas + CSS filter bake
-  if (filterState.hue !== 0 || filterState.saturation !== 100) {
-    var parts = [];
-    if (filterState.hue !== 0)          parts.push('hue-rotate(' + filterState.hue + 'deg)');
-    if (filterState.saturation !== 100) parts.push('saturate(' + filterState.saturation + '%)');
-
-    var tmp = document.createElement('canvas');
-    tmp.width = w; tmp.height = h;
-    var tc = tmp.getContext('2d');
-    tc.filter = parts.join(' ');
-    tc.drawImage(layer.canvas, 0, 0);
-    tc.filter = 'none';
-
-    lctx.clearRect(0, 0, w, h);
-    lctx.drawImage(tmp, 0, 0);
-  }
+  hueSaturationCore(layer, filterState.hue, filterState.saturation);
 
   // 2. Box blur via ImageData
   if (filterState.blur > 0) {
@@ -81,6 +67,30 @@ function applyFilters() {
 
   renderAll();
   resetFilterSliders();
+}
+
+// hue in degrees, saturation in percent (100 = unchanged).
+// Bakes via an offscreen canvas with ctx.filter. Returns false if the
+// browser has no ctx.filter support (older Safari).
+function hueSaturationCore(layer, hue, saturation) {
+  if (hue === 0 && saturation === 100) return true;
+  var w = layer.canvas.width, h = layer.canvas.height;
+  var tmp = document.createElement('canvas');
+  tmp.width = w; tmp.height = h;
+  var tc = tmp.getContext('2d');
+  if (typeof tc.filter !== 'string') return false;
+
+  var parts = [];
+  if (hue !== 0)          parts.push('hue-rotate(' + hue + 'deg)');
+  if (saturation !== 100) parts.push('saturate(' + saturation + '%)');
+  tc.filter = parts.join(' ');
+  tc.drawImage(layer.canvas, 0, 0);
+  tc.filter = 'none';
+
+  var lctx = layer.canvas.getContext('2d');
+  lctx.clearRect(0, 0, w, h);
+  lctx.drawImage(tmp, 0, 0);
+  return true;
 }
 
 // ── Reset sliders and remove CSS preview ─────────────────
@@ -184,8 +194,9 @@ function applySharpen(lctx, w, h, strength) {
   // Clamp strength to reasonable range for the kernel weight
   var s = Math.min(strength / 10, 1.0); // 0.0 – 1.0
   // Sharpening kernel: identity + (identity - blur) * s
-  // Expressed as a single kernel: center = 1 + 4s, neighbours = -s
-  var c = 1 + 4 * s;
+  // Expressed as a single kernel: center = 1 + 8s, 8 neighbours = -s,
+  // so the weights sum to 1 and overall brightness is preserved
+  var c = 1 + 8 * s;
   var k = [-s, -s, -s, -s, c, -s, -s, -s, -s]; // 3x3 laplacian sharpen
 
   var imgData = lctx.getImageData(0, 0, w, h);
