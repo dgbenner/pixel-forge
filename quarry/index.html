@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Feature Quarry · PixelForge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600&display=swap">
+<style>
+/* Layout: tool shell. Header summary → tabs → scannable rows → modal with inner tabs → accordions/tooltips. */
+:root{
+  --bg:#f3f4f6; --surface:#ffffff; --sunk:#e9ebef; --line:#d6d9df; --ink:#15181d; --ink-2:#4a505b; --ink-3:#7a818d;
+  --accent:#2d55c8; --accent-ink:#ffffff; --accent-soft:#e3e9fb;
+  --picked:#2d55c8; --waiting:#a8690c; --later:#5f6773; --rejected:#a8343a; --built:#24804f;
+  --picked-bg:#e3e9fb; --waiting-bg:#f8ecd8; --later-bg:#e8eaee; --rejected-bg:#f6e2e3; --built-bg:#dff1e6;
+  --shadow:0 10px 40px rgba(20,25,35,.18);
+  --f-ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-head:"IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121418; --surface:#1a1d23; --sunk:#22262d; --line:#323741; --ink:#eceef2; --ink-2:#b3b9c4; --ink-3:#848b97;
+  --accent:#7d9cf2; --accent-ink:#0f1320; --accent-soft:#232c45;
+  --picked:#8aa6f5; --waiting:#e0a54a; --later:#a1a8b4; --rejected:#ec8a8f; --built:#6cc996;
+  --picked-bg:#232c45; --waiting-bg:#3a2e1a; --later-bg:#2a2e36; --rejected-bg:#3d2224; --built-bg:#1d3427;
+  --shadow:0 10px 40px rgba(0,0,0,.5); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121418; --surface:#1a1d23; --sunk:#22262d; --line:#323741; --ink:#eceef2; --ink-2:#b3b9c4; --ink-3:#848b97;
+  --accent:#7d9cf2; --accent-ink:#0f1320; --accent-soft:#232c45;
+  --picked:#8aa6f5; --waiting:#e0a54a; --later:#a1a8b4; --rejected:#ec8a8f; --built:#6cc996;
+  --picked-bg:#232c45; --waiting-bg:#3a2e1a; --later-bg:#2a2e36; --rejected-bg:#3d2224; --built-bg:#1d3427;
+  --shadow:0 10px 40px rgba(0,0,0,.5); color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--f-ui);margin:0}
+.wrap{max-width:1040px;margin:0 auto;padding-inline:20px;padding-block:24px 64px;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--f-head);font-weight:600;letter-spacing:.005em;margin:0;text-wrap:balance}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.mono{font-family:var(--f-mono);font-size:12px}
+.muted{color:var(--ink-2)}
+.tiny{font-size:12px;color:var(--ink-3)}
+
+/* Header */
+.top{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between}
+.brand{display:flex;flex-direction:column;gap:4px;min-width:0}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+h1{font-size:30px;line-height:1.1}
+.lede{color:var(--ink-2);max-width:62ch;margin:0}
+.runpill{display:inline-flex;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12px;color:var(--ink-2)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--built)}
+.runpill select{all:unset;cursor:pointer;font:500 13px var(--f-ui);color:var(--ink);padding-right:14px;background:linear-gradient(45deg,transparent 50%,var(--ink-3) 50%) right 4px center/5px 5px no-repeat,linear-gradient(-45deg,transparent 50%,var(--ink-3) 50%) right 0 center/5px 5px no-repeat}
+.runpill:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.tag.new{background:var(--built-bg);color:var(--built)}
+.tag.moved{background:var(--waiting-bg);color:var(--waiting)}
+.row.current{background:var(--accent-soft)}
+
+/* Summary strip */
+.strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.stat{all:unset;cursor:pointer;padding:12px 14px;display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--line);position:relative}
+.stat:last-child{border-right:0}
+.stat:hover{background:var(--sunk)}
+.stat[aria-pressed="true"]{background:var(--sunk)}
+.stat[aria-pressed="true"]::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--c)}
+.stat b{font:600 22px/1.1 var(--f-head);font-variant-numeric:tabular-nums;color:var(--c)}
+.stat span{font-size:12px;color:var(--ink-2)}
+.stat:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{all:unset;cursor:pointer;padding:10px 12px;font-weight:500;color:var(--ink-2);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+
+/* Board */
+.group{display:flex;flex-direction:column;gap:8px}
+.group-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.group-h h2{font-size:16px}
+.group-h p{margin:0;font-size:12px;color:var(--ink-3)}
+.rows{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.row{all:unset;cursor:pointer;display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row:hover{background:var(--sunk)}
+.row:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.rank{font:500 12px var(--f-mono);color:var(--ink-3);text-align:center;font-variant-numeric:tabular-nums}
+.stripe{width:4px;height:28px;border-radius:2px;background:var(--c);justify-self:center}
+.rmain{min-width:0;display:flex;flex-direction:column;gap:2px}
+.rtitle{font-weight:600;line-height:1.3}
+.rwhy{font-size:13px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rtags{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.tag{font:500 11px var(--f-mono);padding:2px 7px;border-radius:4px;background:var(--sunk);color:var(--ink-2);white-space:nowrap}
+.tag.found{background:var(--accent-soft);color:var(--accent)}
+.tag.dec{background:var(--c-bg);color:var(--c)}
+.chev{color:var(--ink-3)}
+@media (max-width:620px){
+  .strip{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .stat:nth-child(3){border-right:0}
+  .stat:nth-child(n+4){border-top:1px solid var(--line)}
+  .row{grid-template-columns:20px minmax(0,1fr)}
+  .rtags{grid-column:2;justify-content:flex-start}
+  .chev{display:none}
+  .rwhy{white-space:normal}
+}
+
+/* How it works */
+.flow{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.step{all:unset;cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.step:hover{border-color:var(--ink-3)}
+.step[aria-expanded="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.step:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.step .n{font:500 11px var(--f-mono);color:var(--ink-3)}
+.step b{font-family:var(--f-head);font-size:15px;line-height:1.2}
+.step .who{font:500 11px var(--f-mono);align-self:flex-start;padding:1px 6px;border-radius:4px;background:var(--sunk);color:var(--ink-2)}
+.step .who.judge{background:var(--waiting-bg);color:var(--waiting)}
+.step .who.you{background:var(--built-bg);color:var(--built)}
+.stepdetail{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.stepdetail p{margin:0;max-width:68ch}
+@media (max-width:820px){.flow{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:460px){.flow{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.split{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.panel h3{font-size:15px}
+.panel ul{margin:0;padding-left:18px;color:var(--ink-2)}
+@media (max-width:720px){.split{grid-template-columns:1fr}}
+
+/* Accordions */
+details{border-top:1px solid var(--line)}
+details:first-of-type{border-top:0}
+summary{cursor:pointer;list-style:none;padding:10px 0;display:flex;gap:10px;align-items:center;font-weight:500}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"";width:7px;height:7px;border-right:1.5px solid var(--ink-3);border-bottom:1.5px solid var(--ink-3);transform:rotate(-45deg);transition:transform .15s;flex:none;margin-left:2px}
+details[open]>summary::before{transform:rotate(45deg)}
+.acc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:2px 16px}
+.acc .body{padding:0 0 12px 19px;color:var(--ink-2);display:flex;flex-direction:column;gap:6px}
+.acc .body p{margin:0;max-width:70ch}
+
+/* Tooltip */
+.tip{all:unset;cursor:help;display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--ink-3);color:var(--ink-3);font:600 10px var(--f-ui);position:relative;vertical-align:1px;margin-left:4px}
+.tip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tip .bubble{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);width:max-content;max-width:240px;background:var(--ink);color:var(--bg);font:400 12px/1.45 var(--f-ui);padding:8px 10px;border-radius:6px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .12s;z-index:5;text-align:left;white-space:normal}
+.tip:hover .bubble,.tip:focus .bubble,.tip[data-open] .bubble{opacity:1}
+
+/* Modal */
+.scrim{position:fixed;inset:0;background:rgba(10,12,16,.45);display:flex;align-items:flex-start;justify-content:center;padding:max(5vh,16px) 16px;z-index:20;overflow-y:auto}
+.modal{background:var(--surface);color:var(--ink);border-radius:12px;box-shadow:var(--shadow);width:min(720px,100%);display:flex;flex-direction:column;max-height:none}
+.mhead{padding:18px 20px 0;display:flex;flex-direction:column;gap:8px}
+.mtop{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.mhead h2{font-size:22px;line-height:1.2}
+.close{all:unset;cursor:pointer;width:30px;height:30px;border-radius:6px;display:grid;place-items:center;color:var(--ink-2);flex:none}
+.close:hover{background:var(--sunk)}
+.close:focus-visible{outline:2px solid var(--accent)}
+.verdict{margin:0;color:var(--ink-2);font-size:13px}
+.verdict b{color:var(--ink);font-weight:600}
+.mtabs{padding:0 20px;margin-top:6px}
+.mbody{padding:16px 20px;display:flex;flex-direction:column;gap:14px;min-height:180px}
+.mbody p{margin:0;max-width:66ch}
+.mfoot{padding:12px 20px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;background:var(--sunk);border-radius:0 0 12px 12px}
+.decide{display:flex;gap:6px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--surface)}
+.dbtn{all:unset;cursor:pointer;padding:6px 12px;font-weight:500;font-size:13px;border-left:1px solid var(--line);color:var(--ink-2)}
+.dbtn:first-child{border-left:0}
+.dbtn:hover{background:var(--sunk)}
+.dbtn[aria-pressed="true"]{background:var(--c-bg);color:var(--c)}
+.statusbox{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.primary{all:unset;cursor:pointer;padding:7px 14px;border-radius:7px;background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:13px}
+.primary:hover{filter:brightness(1.08)}
+.primary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.copybox{width:100%;font:12px/1.45 var(--f-mono);background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px;resize:none}
+.dbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.label{font:500 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.kv{display:grid;grid-template-columns:120px minmax(0,1fr);gap:8px 14px;align-items:baseline}
+.kv dt{font-size:12px;color:var(--ink-3)}
+.kv dd{margin:0;min-width:0}
+@media (max-width:520px){.kv{grid-template-columns:1fr}.kv dt{margin-top:6px}}
+.levels{display:flex;flex-direction:column;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.lvl{display:grid;grid-template-columns:92px 44px minmax(0,1fr);gap:12px;padding:10px 12px;border-top:1px solid var(--line);align-items:baseline}
+.lvl:first-child{border-top:0}
+.lvl b{font-weight:600}
+.size{font:500 11px var(--f-mono);text-align:center;padding:1px 0;border-radius:4px;background:var(--sunk)}
+@media (max-width:520px){.lvl{grid-template-columns:1fr auto}.lvl p{grid-column:1 / -1}}
+.compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.compare>div{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.compare .lean{border-color:var(--accent);background:var(--accent-soft)}
+@media (max-width:520px){.compare{grid-template-columns:1fr}}
+.sig{display:grid;grid-template-columns:130px 40px minmax(0,1fr);gap:10px;align-items:baseline;padding:8px 0;border-top:1px solid var(--line)}
+.sig:first-child{border-top:0}
+.lv{font:600 11px var(--f-mono);text-align:center;border-radius:4px;padding:1px 0}
+.lv.H{background:var(--built-bg);color:var(--built)}.lv.M{background:var(--waiting-bg);color:var(--waiting)}.lv.L{background:var(--later-bg);color:var(--later)}
+@media (max-width:520px){.sig{grid-template-columns:1fr auto}.sig .src{grid-column:1 / -1}}
+.src{font-size:13px;color:var(--ink-2)}
+code{font-family:var(--f-mono);font-size:12px;background:var(--sunk);padding:1px 5px;border-radius:4px;word-break:break-word}
+ul.plain{margin:0;padding-left:18px;color:var(--ink-2);display:flex;flex-direction:column;gap:4px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;box-shadow:var(--shadow);z-index:30}
+.note{font-size:12px;color:var(--ink-3)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.mfoot .primary{margin-left:auto}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.ghost{all:unset;cursor:pointer;padding:7px 14px;border-radius:7px;border:1px solid var(--line);background:var(--surface);font-weight:500;font-size:13px}
+.ghost:hover{border-color:var(--ink-3)}
+.ghost:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+pre.spec{margin:0;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:12px;font:12px/1.55 var(--f-mono);white-space:pre-wrap;word-break:break-word;max-height:46vh;overflow:auto}
+.err{background:var(--rejected-bg);color:var(--rejected);border-radius:8px;padding:12px 14px}
+a{color:var(--accent)}
+</style></head><body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <span class="eyebrow">PixelForge · research agent</span>
+      <h1>Feature Quarry</h1>
+      <p class="lede">An agent reads Photoshop docs, forums and modern editors, checks what PixelForge already has, and proposes what to build next. A separate judge picks. Open any feature to export a build spec for Claude Code.</p>
+    </div>
+    <label class="runpill" id="runpill" for="runsel"><span class="dot"></span><span class="tiny">Run</span><select id="runsel" aria-label="Choose a run" disabled><option>Loading…</option></select></label>
+  </header>
+
+  <div class="strip" id="strip" role="group" aria-label="Filter by status"></div>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" id="t-board" aria-controls="p-board" aria-selected="true">Board</button>
+    <button class="tab" role="tab" id="t-how" aria-controls="p-how" aria-selected="false" tabindex="-1">How it works</button>
+    <button class="tab" role="tab" id="t-runs" aria-controls="p-runs" aria-selected="false" tabindex="-1">Runs</button>
+  </nav>
+
+  <section id="p-board" role="tabpanel" aria-labelledby="t-board" class="group" style="gap:24px"></section>
+
+  <section id="p-how" role="tabpanel" aria-labelledby="t-how" hidden style="display:flex;flex-direction:column;gap:16px">
+    <div class="group-h"><h2>Six steps, one run</h2><p>Click a step for detail.</p></div>
+    <div class="flow" id="flow"></div>
+    <div class="stepdetail" id="stepdetail"></div>
+    <div class="group-h" style="margin-top:8px"><h2>Who does what</h2></div>
+    <div class="split">
+      <div class="panel"><span class="label">Research agent</span><h3>Gathers and scores</h3><ul><li>Reads PixelForge's code</li><li>Searches docs, forums, other editors</li><li>Rates each idea on six signals</li></ul></div>
+      <div class="panel"><span class="label">Judge agent</span><h3>Picks, separately</h3><ul><li>Sees only the criteria, the inventory and the evidence</li><li>Never sees the researcher's reasoning</li><li>Picks 5–6, gives a reason for every reject</li></ul></div>
+      <div class="panel"><span class="label">You</span><h3>Set the rules, choose, build</h3><ul><li>Write the criteria the judge applies</li><li>Pick a feature and export its spec</li><li>Paste the spec into Claude Code to build it</li></ul></div>
+    </div>
+    <div class="acc">
+      <details><summary>What are the criteria?</summary><div class="body">
+        <p>A one-page file (<code>criteria.md</code>) that defines "better" for PixelForge. Its thesis: a lean editor built around the jobs people do when adjusting and compositing, not around Photoshop's darkroom-era feature list.</p>
+        <ul class="plain"><li>Job first: name the job, not the tool</li><li>One good way per job</li><li>Expert control in plain language</li><li>Non-destructive by default</li><li>Customizable (presets, defaults)</li><li>Composite-first</li><li>Every feature works for people and for the editing agent</li></ul>
+      </div></details>
+      <details><summary>How do I run it again?</summary><div class="body">
+        <p>In the Claude Code panel in VS Code, with the pixel-forge folder open, type <code>/feature-quarry</code>. It saves a new dated report and adds the run to this page. Earlier runs stay available in the run picker at the top and in the Runs tab.</p>
+      </div></details>
+      <details><summary>What it can't do</summary><div class="body">
+        <p>It can't measure real usage. Adobe doesn't publish it. The ratings are proxies from public writing: documentation depth, forum threads, tutorial supply.</p>
+        <p>It checks whether a feature works and fits the criteria. Whether it's worth having is your call.</p>
+      </div></details>
+    </div>
+  </section>
+
+  <section id="p-runs" role="tabpanel" aria-labelledby="t-runs" hidden style="display:flex;flex-direction:column;gap:12px"></section>
+</div>
+
+<div id="modal-root"></div>
+
+<script>
+const STATUS = {
+  picked:  {label:"Picked",   c:"--picked",  hint:"The judge's top picks, in build order."},
+  waiting: {label:"Waiting",  c:"--waiting", hint:"Good ideas blocked until a foundation exists."},
+  later:   {label:"Later",    c:"--later",   hint:"Worth doing; lost out this round."},
+  rejected:{label:"Rejected", c:"--rejected",hint:"Don't fit the criteria."},
+};
+const TIPS = {
+  Weight:"How deeply it's documented and taught. A sign of how central the job is.",
+  Demand:"How often people ask how to do it in forums.",
+  Pain:"Complaints, bugs and workarounds. Where Photoshop's way hurts.",
+  "Leaner path":"How a modern editor does the same job more simply.",
+  Size:"Effort for the smallest useful version. Larger versions are on the Approach tab.",
+  Foundation:"Other features depend on this one. Build these first.",
+};
+let RUN = null, C = [], PREV = null, RUNS = [], filter = null;
+const isNew = c => PREV && !PREV.has(c.id);
+const movedFrom = c => PREV && PREV.has(c.id) && PREV.get(c.id) !== c.status ? PREV.get(c.id) : null;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const tip = k => TIPS[k] ? `<button class="tip" type="button" aria-label="What is ${esc(k)}?">?<span class="bubble" role="tooltip">${esc(TIPS[k])}</span></button>` : "";
+const fmtDate = d => { try{ return new Date(d+"T12:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}); }catch(e){ return d; } };
+function toast(msg){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2400); }
+
+/* ---------- Spec export ---------- */
+function slug(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,50); }
+function specMarkdown(c){
+  const L = [];
+  L.push(`# Feature spec: ${c.title}`, "");
+  L.push(`For Claude Code, in the pixel-forge repo. From the Feature Quarry run of ${RUN.run} (${RUN.report}).`, "");
+  if(c.rank){
+    L.push(`## The job`, "", c.why, "", `**Outcome:** ${c.outcome}`, "");
+    L.push(`**Why it was picked (judge):** ${c.verdict} Serves the principle *${c.principle}* in \`.claude/skills/feature-quarry/criteria.md\`.`, "");
+    L.push(`## Design direction`, "", `- **Avoid Photoshop's way:** ${c.ps}`, `- **Build the lean way:** ${c.lean}`, `- **Reference:** ${c.leanWho}`, "");
+    L.push(`## Scope`, "", `Build the **Minimal** level only. The other levels are listed so the code doesn't block them later.`, "");
+    c.approach.forEach(([n,s,d]) => L.push(`- **${n}${n==="Minimal"?" (build this)":""}** · size ${s}: ${d}`));
+    L.push("", `## Build notes`, "", `- **Likely files:** ${c.files}`, `- **Needs first:** ${c.needs || "Nothing. This is a foundation."}`, `- **Agent tool to add:** \`${c.tool}\`. Follow the tool rules in the agent spec: find layers by name, validate before changing anything, plain-language errors, one History entry per change.`, "");
+    L.push(`## Risks to handle`, "", ...c.risks.map(r => `- ${r}`), "");
+  } else {
+    L.push(`## The job`, "", c.why, "");
+    L.push(`Status in the quarry: **${STATUS[c.status].label}**.${c.needs ? ` It needs **${c.needs}** first.` : ""}`, "");
+    L.push(`## Scope`, "", `Not fully researched in this run. Before writing code, propose the smallest useful version in a few lines and wait for approval.`, "");
+    if(c.needs) L.push(`Check that ${c.needs} exists in PixelForge first. If it doesn't, stop and say so.`, "");
+  }
+  L.push(`## Done when`, "",
+    `- It works from the menu or panel by hand.`,
+    ...(c.rank ? [`- The agent tool works in the Agent panel and returns a clear error on bad input.`] : []),
+    `- Undo, redo, duplicate layer and project save/load all keep it intact.`,
+    `- Nothing that worked before is broken.`,
+    `- You tell me in a few lines what changed and how to try it.`, "");
+  L.push(`Don't commit or push until I've tried it.`);
+  return L.join("\n");
+}
+async function copySpec(c){
+  const md = specMarkdown(c);
+  try{ await navigator.clipboard.writeText(md); toast("Spec copied. Paste it into Claude Code."); }
+  catch(e){ const pre=$("#specpre"); if(pre){ const r=document.createRange(); r.selectNodeContents(pre); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r);} toast("Copy was blocked. The spec is selected: press ⌘C."); }
+}
+function downloadSpec(c){
+  const blob = new Blob([specMarkdown(c)], {type:"text/markdown"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `spec-${slug(c.title)}.md`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  toast(`Downloaded ${a.download}`);
+}
+
+/* ---------- Board ---------- */
+function renderStrip(){
+  const counts = {picked:0,waiting:0,later:0,rejected:0}; C.forEach(c => counts[c.status]++);
+  $("#strip").innerHTML = Object.keys(STATUS).map(k => `<button class="stat" type="button" data-k="${k}" aria-pressed="${filter===k}" style="--c:var(${STATUS[k].c})"><b>${counts[k]}</b><span>${STATUS[k].label}</span></button>`).join("");
+  $("#strip").style.gridTemplateColumns = "repeat(4,minmax(0,1fr))";
+  $("#strip").querySelectorAll(".stat").forEach(b => b.onclick = () => { filter = filter===b.dataset.k ? null : b.dataset.k; selectTab("board"); renderAll(); });
+}
+function rowHTML(c){
+  const st = STATUS[c.status];
+  const lead = c.rank ? `<span class="rank">${c.rank}</span>` : `<span class="stripe" style="--c:var(${st.c})"></span>`;
+  const tags = [];
+  if(isNew(c)) tags.push(`<span class="tag new">New</span>`);
+  else if(movedFrom(c)) tags.push(`<span class="tag moved" title="Was ${STATUS[movedFrom(c)].label}">Was ${STATUS[movedFrom(c)].label.toLowerCase()}</span>`);
+  if(c.foundation) tags.push(`<span class="tag found">Foundation</span>`);
+  if(c.size) tags.push(`<span class="tag">Min ${c.size}</span>`);
+  if(c.needs) tags.push(`<span class="tag">Needs ${esc(c.needs.split(" + ")[0])}</span>`);
+  return `<button class="row" type="button" data-id="${c.id}">${lead}
+    <span class="rmain"><span class="rtitle">${esc(c.title)}</span><span class="rwhy">${esc(c.why)}</span></span>
+    <span class="rtags">${tags.slice(0,2).join("")}<span class="chev" aria-hidden="true">›</span></span></button>`;
+}
+function renderBoard(){
+  const groups = Object.keys(STATUS).filter(k => !filter || filter===k).map(k => ({k, ...STATUS[k], items:C.filter(c=>c.status===k)}));
+  $("#p-board").innerHTML = groups.map(g => `<div class="group">
+      <div class="group-h"><h2>${g.label} <span class="tiny">${g.items.length}</span></h2><p>${esc(g.hint)}</p></div>
+      <div class="rows">${g.items.map(rowHTML).join("")}</div></div>`).join("")
+    + (filter ? `<p><button class="ghost" type="button" id="clearf">Show all</button></p>` : "");
+  $("#p-board").querySelectorAll(".row").forEach(r => r.onclick = () => openModal(r.dataset.id));
+  const cf = $("#clearf"); if(cf) cf.onclick = () => { filter=null; renderAll(); };
+}
+function renderRuns(){
+  const newCount = PREV ? C.filter(isNew).length : null;
+  $("#p-runs").innerHTML = `
+    <div class="group-h"><h2>All runs <span class="tiny">${RUNS.length}</span></h2><p>Click a run to view it on the board.</p></div>
+    <div class="rows">${RUNS.map(r => `<button class="row${r.run===RUN.run?" current":""}" type="button" data-run="${esc(r.run)}" style="grid-template-columns:minmax(0,1fr) auto">
+      <span class="rmain"><span class="rtitle">${fmtDate(r.run)}${r===RUNS[0]?" · latest":""}</span>
+      <span class="rwhy">${r.candidates_considered} candidates · ${Object.keys(STATUS).map(k=>`${(r.counts||{})[k]??0} ${STATUS[k].label.toLowerCase()}`).join(" · ")}</span></span>
+      <span class="rtags">${r.run===RUN.run?`<span class="tag found">Viewing</span>`:""}<span class="tag">${esc(r.report||"")}</span></span></button>`).join("")}</div>
+    <div class="group-h" style="margin-top:12px"><h2>${fmtDate(RUN.run)}</h2>${newCount!==null?`<p>${newCount} new since the run before.</p>`:`<p>First run.</p>`}</div>
+    <div class="acc">
+      <details open><summary>Judge's summary</summary><div class="body"><p>${esc(RUN.judge_summary)}</p></div></details>
+      <details><summary>Sources searched</summary><div class="body"><p>${esc(RUN.sources||"")}</p><p class="note">Source links are in the report file.</p></div></details>
+      <details><summary>Found in PixelForge's code</summary><div class="body"><ul class="plain">${(RUN.code_findings||[]).map(f=>`<li>${esc(f)}</li>`).join("")}</ul></div></details>
+    </div>`;
+  $("#p-runs").querySelectorAll("[data-run]").forEach(b => b.onclick = () => { loadRun(b.dataset.run); selectTab("board"); });
+}
+
+/* ---------- How it works ---------- */
+const STEPS = [
+  {t:"Inventory", who:"agent", d:"Reads PixelForge's code and lists what exists, what's partial and what's broken. Notes the foundations (masks, editable adjustments, presets) that other features depend on."},
+  {t:"Read past runs", who:"agent", d:"Checks earlier reports so it doesn't re-propose what's already built or rejected, unless the evidence changed."},
+  {t:"Quarry", who:"agent", d:"Searches Photoshop docs, forums and modern editors for 15–25 candidates, each framed as a job (\"match a pasted person to the background's light\"), not a menu item."},
+  {t:"Score", who:"agent", d:"Rates each candidate High, Medium or Low on weight, demand, pain, leaner path, composite fit and feasibility, with links. These are proxies from public writing, not usage data."},
+  {t:"Judge", who:"judge", d:"A separate agent sees only the criteria, the inventory and the evidence. It picks 5–6, includes a missing foundation if there is one, and gives a reason for every candidate it drops."},
+  {t:"You build", who:"you", d:"Open a feature, export its spec, and paste it into Claude Code. The spec tells Claude Code what to build, at what size, and when it's done."},
+];
+let openStep = 4;
+function renderFlow(){
+  $("#flow").innerHTML = STEPS.map((s,i)=>`<button class="step" type="button" data-i="${i}" aria-expanded="${i===openStep}" aria-controls="stepdetail"><span class="n">${i+1}</span><b>${s.t}</b><span class="who ${s.who}">${s.who==="agent"?"Research agent":s.who==="judge"?"Judge agent":"You"}</span></button>`).join("");
+  $("#flow").querySelectorAll(".step").forEach(b => b.onclick = () => { openStep = +b.dataset.i; renderFlow(); });
+  const s = STEPS[openStep];
+  $("#stepdetail").innerHTML = `<span class="label">Step ${openStep+1}</span><h3>${s.t}</h3><p class="muted">${esc(s.d)}</p>`;
+}
+
+/* ---------- Modal ---------- */
+let lastFocus = null, mtab = "overview";
+function openModal(id, tab){
+  const c = C.find(x=>x.id===id); if(!c) return;
+  lastFocus = document.activeElement; mtab = tab || "overview";
+  const st = STATUS[c.status];
+  const tabs = c.rank ? [["overview","Overview"],["approach","Approach"],["evidence","Evidence"],["build","Build"],["spec","Export spec"]] : [["overview","Overview"],["spec","Export spec"]];
+  const tagRow = [`<span class="tag dec" style="--c:var(${st.c});--c-bg:var(${st.c}-bg)">${c.rank?`#${c.rank} `:""}${st.label}</span>`];
+  if(isNew(c)) tagRow.push(`<span class="tag new">New this run</span>`);
+  else if(movedFrom(c)) tagRow.push(`<span class="tag moved">Was ${STATUS[movedFrom(c)].label.toLowerCase()}</span>`);
+  if(c.foundation) tagRow.push(`<span class="tag found">Foundation</span>${tip("Foundation")}`);
+  if(c.size) tagRow.push(`<span class="tag">Smallest version: ${c.size}</span>${tip("Size")}`);
+  if(c.needs) tagRow.push(`<span class="tag">Needs ${esc(c.needs)}</span>`);
+  $("#modal-root").innerHTML = `<div class="scrim" id="scrim"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mtitle">
+    <div class="mhead">
+      <div class="mtop"><h2 id="mtitle">${esc(c.title)}</h2><button class="close" type="button" id="mclose" aria-label="Close">✕</button></div>
+      <div class="rtags" style="justify-content:flex-start">${tagRow.join("")}</div>
+      <p class="verdict">${c.rank ? `<b>Judge:</b> ${esc(c.verdict)}` : `<b>Why:</b> ${esc(c.why)}`}</p>
+    </div>
+    <nav class="tabs mtabs" role="tablist">${tabs.map(([k,l])=>`<button class="tab" role="tab" type="button" data-t="${k}" aria-selected="${mtab===k}" ${mtab===k?"":'tabindex="-1"'}>${l}</button>`).join("")}</nav>
+    <div class="mbody" id="mbody"></div>
+    <div class="mfoot"><span class="tiny">Build it with Claude Code</span><button class="primary" type="button" id="tospec">Export spec</button></div>
+  </div></div>`;
+  renderMBody(c);
+  $("#mclose").onclick = closeModal;
+  $("#scrim").onclick = e => { if(e.target.id==="scrim") closeModal(); };
+  $("#tospec").onclick = () => setMTab(c, "spec");
+  $("#modal-root").querySelectorAll(".mtabs .tab").forEach(t => t.onclick = () => setMTab(c, t.dataset.t));
+  document.body.style.overflow="hidden";
+  $("#mclose").focus();
+}
+function setMTab(c, k){
+  mtab = k;
+  $("#modal-root").querySelectorAll(".mtabs .tab").forEach(x=>{ const on = x.dataset.t===k; x.setAttribute("aria-selected",on); x.tabIndex = on?0:-1; });
+  renderMBody(c);
+}
+function renderMBody(c){
+  const m = $("#mbody");
+  $("#modal-root .mfoot").hidden = mtab==="spec";
+  if(mtab==="spec"){
+    m.innerHTML = `<p class="muted">A ready-to-use build spec for this feature. Paste it into Claude Code in the pixel-forge folder, or save it as a file.</p>
+      <div class="btnrow"><button class="primary" type="button" id="copyspec">Copy spec</button><button class="ghost" type="button" id="dlspec">Download .md</button></div>
+      <pre class="spec" id="specpre" tabindex="0">${esc(specMarkdown(c))}</pre>`;
+    $("#copyspec").onclick = () => copySpec(c);
+    $("#dlspec").onclick = () => downloadSpec(c);
+    return;
+  }
+  if(!c.rank){
+    m.innerHTML = `${c.needs?`<dl class="kv"><dt>Waiting on</dt><dd>${esc(c.needs)}</dd></dl>`:""}<p class="muted">${esc(c.why)}</p><p class="tiny">Full evidence for this candidate is in the run's report file.</p>`;
+    return;
+  }
+  if(mtab==="overview") m.innerHTML = `
+    <dl class="kv"><dt>Outcome</dt><dd>${esc(c.outcome)}</dd><dt>Principle</dt><dd>${esc(c.principle)}</dd>${c.needs?`<dt>Needs first</dt><dd>${esc(c.needs)}</dd>`:""}</dl>
+    <div class="compare"><div><span class="label">Photoshop's way</span><span>${esc(c.ps)}</span></div><div class="lean"><span class="label">The lean way</span><span>${esc(c.lean)}</span></div></div>
+    <div class="acc"><details><summary>Who already does it well${tip("Leaner path")}</summary><div class="body"><p>${esc(c.leanWho)}</p></div></details></div>`;
+  if(mtab==="approach") m.innerHTML = `<p class="muted">Three ways to build the same feature, smallest first. The exported spec builds Minimal.</p>
+    <div class="levels">${c.approach.map(([n,s,d])=>`<div class="lvl"><b>${n}</b><span class="size">${s}</span><p>${esc(d)}</p></div>`).join("")}</div>`;
+  if(mtab==="evidence") m.innerHTML = `<div>${c.sig.map(([k,l,s])=>`<div class="sig"><span>${k}${tip(k)}</span><span class="lv ${l}">${l}</span><span class="src">${esc(s)}</span></div>`).join("")}</div>
+    <p class="tiny">Ratings are proxies from public writing, not usage data. Source links are in the report file.</p>`;
+  if(mtab==="build") m.innerHTML = `
+    <dl class="kv"><dt>Files</dt><dd><code>${esc(c.files)}</code></dd><dt>Agent tool</dt><dd><code>${esc(c.tool)}</code></dd><dt>Needs first</dt><dd>${esc(c.needs||"Nothing")}</dd></dl>
+    <div class="acc"><details><summary>Risks (${c.risks.length})</summary><div class="body"><ul class="plain">${c.risks.map(r=>`<li>${esc(r)}</li>`).join("")}</ul></div></details></div>`;
+}
+function closeModal(){ $("#modal-root").innerHTML=""; document.body.style.overflow=""; if(lastFocus) lastFocus.focus(); }
+document.addEventListener("keydown", e => { if(e.key==="Escape" && $("#scrim")) closeModal(); });
+document.addEventListener("click", e => { const t = e.target.closest(".tip"); document.querySelectorAll(".tip[data-open]").forEach(x=>{ if(x!==t) x.removeAttribute("data-open"); }); if(t){ e.stopPropagation(); t.toggleAttribute("data-open"); } }, true);
+
+/* ---------- Tabs ---------- */
+function selectTab(k){
+  ["board","how","runs"].forEach(x=>{ const t=$("#t-"+x); t.setAttribute("aria-selected", x===k); t.tabIndex = x===k?0:-1; $("#p-"+x).hidden = x!==k; });
+}
+["board","how","runs"].forEach(x => $("#t-"+x).onclick = () => selectTab(x));
+document.querySelector(".tabs[aria-label=Sections]").addEventListener("keydown", e => {
+  const order=["board","how","runs"]; const cur=order.findIndex(x=>$("#t-"+x).getAttribute("aria-selected")==="true");
+  if(e.key==="ArrowRight"||e.key==="ArrowLeft"){ const n=order[(cur+(e.key==="ArrowRight"?1:2))%3]; selectTab(n); $("#t-"+n).focus(); }
+});
+
+function renderAll(){ renderStrip(); renderBoard(); }
+renderFlow();
+const getJSON = u => fetch(u, {cache:"no-store"}).then(r => { if(!r.ok) throw new Error(u+" HTTP "+r.status); return r.json(); });
+async function loadRun(runId){
+  const idx = RUNS.findIndex(r => r.run===runId); if(idx<0) return;
+  const d = await getJSON(RUNS[idx].file);
+  RUN = d; C = d.candidates || [];
+  PREV = null;
+  if(RUNS[idx+1]){ try{ const p = await getJSON(RUNS[idx+1].file); PREV = new Map((p.candidates||[]).map(c=>[c.id,c.status])); }catch(e){} }
+  $("#runsel").value = runId;
+  if(location.hash.slice(1)!==runId) history.replaceState(null,"","#"+runId);
+  filter = null; renderAll(); renderRuns();
+}
+(async () => {
+  try{
+    const idx = await getJSON("runs/index.json");
+    RUNS = (idx.runs||[]).slice().sort((a,b)=> a.run<b.run?1:-1);
+    if(!RUNS.length) throw new Error("no runs listed in runs/index.json");
+    const sel = $("#runsel");
+    sel.innerHTML = RUNS.map((r,i)=>`<option value="${esc(r.run)}">${fmtDate(r.run)}${i===0?" (latest)":""}</option>`).join("");
+    sel.disabled = RUNS.length<2;
+    sel.onchange = () => loadRun(sel.value);
+    const want = location.hash.slice(1);
+    await loadRun(RUNS.some(r=>r.run===want) ? want : RUNS[0].run);
+  }catch(err){
+    $("#p-board").innerHTML = `<div class="err">Couldn't load the quarry runs (${esc(err.message)}). Open this page through a web server (localhost or GitHub Pages), not by double-clicking the file, and run <code>/feature-quarry</code> if no run exists yet.</div>`;
+    $("#runsel").innerHTML = `<option>No runs</option>`;
+  }
+})();
+</script>
+</body></html>

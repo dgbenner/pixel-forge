@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feature Quarry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f6f5f2; --surface: #ffffff; --text: #1d1d1f; --muted: #6b6b70; --border: #e2e0da;
+  --accent: #2f6fde; --verdict-bg: #eef3fc; --code-bg: #f0eee9;
+  --hi: #1f7a44; --hi-bg: #e3f3e9; --med: #8a6100; --med-bg: #fbf0d6; --lo: #8b3a3a; --lo-bg: #f8e4e4;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141416; --surface: #1d1d20; --text: #ececee; --muted: #9a9aa2; --border: #303036;
+    --accent: #7aa7ff; --verdict-bg: #1b2538; --code-bg: #26262b;
+    --hi: #7fd6a0; --hi-bg: #1c3326; --med: #f0c56b; --med-bg: #3a2f17; --lo: #f19a9a; --lo-bg: #3a1f1f;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141416; --surface: #1d1d20; --text: #ececee; --muted: #9a9aa2; --border: #303036;
+  --accent: #7aa7ff; --verdict-bg: #1b2538; --code-bg: #26262b;
+  --hi: #7fd6a0; --hi-bg: #1c3326; --med: #f0c56b; --med-bg: #3a2f17; --lo: #f19a9a; --lo-bg: #3a1f1f;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.6 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+main { max-width: 820px; margin: 0 auto; padding: 48px 16px 80px; }
+header { margin-bottom: 8px; }
+.eyebrow { margin: 0; color: var(--accent); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; font-size: 13px; }
+h1 { margin: 4px 0 20px; font-size: 34px; line-height: 1.2; }
+h2 { font-size: 22px; line-height: 1.3; margin: 0 0 10px; display: flex; gap: 12px; align-items: baseline; }
+h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 22px 0 6px; }
+.num { flex: none; display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+  background: var(--accent); color: var(--bg); font-size: 15px; font-weight: 700; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 26px 26px 18px; margin: 26px 0; }
+.section { margin: 40px 0 0; }
+.nowrap { white-space: nowrap; }
+.section h2 { font-size: 20px; }
+.verdict { background: var(--verdict-bg); border-left: 3px solid var(--accent); padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 4px 0 6px; }
+ul { padding-left: 20px; margin: 6px 0; }
+li { margin: 5px 0; }
+a { color: var(--accent); text-decoration: none; overflow-wrap: anywhere; }
+a:hover { text-decoration: underline; }
+code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; font-size: 13.5px; overflow-wrap: anywhere; }
+.rate { font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 99px; }
+.r-High { color: var(--hi); background: var(--hi-bg); }
+.r-Medium { color: var(--med); background: var(--med-bg); }
+.r-Low { color: var(--lo); background: var(--lo-bg); }
+@media (max-width: 560px) { h1 { font-size: 27px; } .card { padding: 20px 16px 12px; } }
+</style>
+</head>
+<body>
+<main>
+<header><p class="eyebrow">PixelForge</p><h1>Feature Quarry — <span class="nowrap">2026-10-04</span></h1></header>
+<p>PixelForge is missing the two foundations that compositing rests on: masks and editable adjustments. Today every cutout is made by erasing pixels and every color change is baked in, so nothing in a composite can be revisited, and a placed element can't even be scaled or rotated. Build those three basics first, and the cut-out, refine and match loop that defines a composite becomes possible.</p>
+<p>Method: 21 candidate jobs were researched across Adobe's documentation, Adobe Community, PhotoshopGurus and modern editors (Photopea, Affinity Photo, Pixelmator Pro, Canva). A separate judge agent then picked the top six using only <code>criteria.md</code>, the PixelForge inventory and the scored evidence. Picks are listed in build order. No earlier reports existed.</p>
+<section class="card"><h2><span class="num">1</span>Hide part of a layer without erasing it</h2>
+<p class="verdict">Judge's verdict: Principle 6, Composite-first. This is the missing masking foundation, and it unlocks background removal, clean edges, depth blur and adjustments limited to an area. It also serves Principle 4, because erasing is the destructive path it replaces.</p>
+<h3>Evidence</h3>
+<ul><li>Weight: <span class="rate r-High">High</span> — <a href="https://helpx.adobe.com/nz/photoshop/desktop/create-masks/layer-masks/add-layer-masks.html" target="_blank" rel="noopener">Adobe: add layer masks</a>, <a href="https://helpx.adobe.com/uk/photoshop/desktop/create-masks/layer-masks/apply-or-delete-layer-masks.html" target="_blank" rel="noopener">Adobe: apply or delete masks</a></li><li>Demand: <span class="rate r-High">High</span> — <a href="https://community.adobe.com/questions-712/layer-masks-what-am-i-doing-wrong-1145604" target="_blank" rel="noopener">Layer masks, what am I doing wrong</a>, <a href="https://community.adobe.com/t5/photoshop-ecosystem-discussions/brush-tool-not-working-on-layer-mask/m-p/11459838" target="_blank" rel="noopener">Brush not working on mask</a>, <a href="https://community.adobe.com/t5/photoshop-ecosystem-discussions/explanation-for-masking/m-p/13789920/highlight/true" target="_blank" rel="noopener">Explanation for masking</a></li><li>Pain: <span class="rate r-Medium">Medium</span> — <a href="https://community.adobe.com/t5/photoshop-ecosystem-discussions/brush-tool-not-working-on-layer-mask/m-p/11459838" target="_blank" rel="noopener">Brush not working on mask</a>, <a href="https://community.adobe.com/questions-712/eraser-tool-won-t-work-on-image-placed-in-existing-photoshop-file-1071642" target="_blank" rel="noopener">Eraser won't work on placed image</a></li><li>Leaner path: Photopea's Magic Cut replaces the black-and-white model with green "keep" and red "remove" strokes (<a href="https://www.photopea.com/tuts/magic-cut-remove-image-background-online/" target="_blank" rel="noopener">Photopea</a>). Pixelmator Pro states the rule in one line and adds invert and swap shortcuts (<a href="https://support.apple.com/guide/pixelmator-pro/pix3d249bed5/mac" target="_blank" rel="noopener">Pixelmator Pro guide</a>).</li></ul>
+<h3>Photoshop's way vs the lean way</h3>
+<p>In Photoshop a mask is a separate grayscale thumbnail. People paint on the image when they meant the mask, and mix up whether black hides or reveals. The lean model gives each layer one mask and an explicit "editing the mask" mode, and names the brush colors for what they do: hide and reveal.</p>
+<h3>Approach</h3>
+<ul><li>Minimal: one mask per layer. "Add mask" starts it fully revealed, or from the current selection. In mask mode the brush hides or reveals. Masks can be turned off, deleted or applied.</li><li>Effective: adds invert, a mask thumbnail in the Layers panel, and masks that survive undo, duplicate and project save/load.</li><li>Powerful: gradient masks, plus a mask feather and density setting that stays editable, plus clipping a layer to the shape of the layer below.</li></ul>
+<h3>Outcome</h3>
+<p>Cut out and blend elements without destroying anything. A bad cut can be fixed at any time, and a faded edge can be redrawn instead of starting over.</p>
+<h3>Build plan (rough)</h3>
+<ul><li>Files: <code>canvas.js</code> (layers get a mask; <code>renderAll</code> composites masked layers through an offscreen canvas), <code>tools.js</code> (the brush paints the mask in mask mode), <code>layers.js</code> (panel thumbnail, add and delete), <code>state.js</code> / <code>history.js</code> (snapshots copy the mask), <code>ui.js</code> (.pfg save/load, menu), <code>agent-tools.js</code></li><li>Effort: Minimal S · Effective M · Powerful L</li><li>Needs first: nothing (this is a foundation)</li><li>Agent tool: <code>add_mask { layer, source: "reveal_all" | "hide_all" | "selection" | "radial" | "linear", invert? }</code>. The agent can't paint, so its version builds masks from shapes and gradients.</li></ul>
+<h3>Risks</h3>
+<ul><li>Every function that copies a layer must carry the mask. The text-layer work found nine such places, and missing one makes masks vanish on undo.</li><li>Masked layers cost an extra offscreen draw on every render.</li><li>History snapshots grow, because each one stores the mask as well.</li></ul>
+</section>
+<section class="card"><h2><span class="num">2</span>Keep color and tone changes editable later</h2>
+<p class="verdict">Judge's verdict: Principle 4, Non-destructive by default. Every adjustment in PixelForge bakes pixels today, so this is the second missing foundation. It unlocks presets, plain-language shadow and highlight controls, per-color changes and editable color matching.</p>
+<h3>Evidence</h3>
+<ul><li>Weight: <span class="rate r-High">High</span> — <a href="https://helpx.adobe.com/ph_fil/photoshop/how-to/adjustment-layers.html" target="_blank" rel="noopener">Adobe: adjustment layers</a>, <a href="https://www.photopea.com/learn/adjustments-filters" target="_blank" rel="noopener">Photopea: adjustments and filters</a></li><li>Demand: <span class="rate r-High">High</span> — <a href="https://community.adobe.com/t5/photoshop-ecosystem-discussions/how-to-have-adjustment-layer-target-only-one-layer/td-p/12210123" target="_blank" rel="noopener">Adjustment layer to target only one layer</a>, <a href="https://community.adobe.com/questions-712/adjustment-layer-affect-ting-all-lower-layers-instead-of-just-one-layer-1109058" target="_blank" rel="noopener">Adjustment layer affecting all lower layers</a></li><li>Pain: <span class="rate r-High">High</span> — <a href="https://community.adobe.com/feature-requests-713/filters-as-adjustment-layers-656369" target="_blank" rel="noopener">Feature request: filters as adjustment layers</a>, <a href="https://community.adobe.com/feature-requests-713/p-non-destructive-filter-layers-instead-of-smart-filters-653209" target="_blank" rel="noopener">Feature request: non-destructive filter layers</a></li><li>Leaner path: Affinity Photo puts color adjustments and filters such as blur in the same kind of stackable, editable layer (<a href="https://affinity.help/photoipad/en-US.lproj/pages/Layers/livefilters.html" target="_blank" rel="noopener">Affinity Live Filters</a>). Pixelmator Pro keeps adjustments as editable settings on the layer itself, so there's no clipping step.</li></ul>
+<h3>Photoshop's way vs the lean way</h3>
+<p>Photoshop has two systems. Adjustment layers change every layer below them unless you clip them, and filters only stay editable on Smart Objects. The lean model has one system: adjustments are settings on the layer they change, in a stack you can reorder, edit, switch off or bake.</p>
+<h3>Approach</h3>
+<ul><li>Minimal: hue, saturation, brightness and contrast are stored as settings on a layer and applied when drawing, editable from the panel.</li><li>Effective: every existing adjustment (blur, sharpen, color balance, grain) can join a per-layer stack that you can reorder and toggle, with a "Bake" command for when you want pixels.</li><li>Powerful: adjustment layers that affect everything below, with an option to limit them to one layer, plus a mask on any adjustment once masks exist.</li></ul>
+<h3>Outcome</h3>
+<p>Change a grade an hour later without redoing the work. The agent's edits also become fully reversible, so each critic round tweaks settings instead of stacking more baked edits.</p>
+<h3>Build plan (rough)</h3>
+<ul><li>Files: <code>canvas.js</code> (render each layer through its adjustment stack, with a cache), <code>filters.js</code> / <code>ui.js</code> (the existing pixel functions become render-time steps; adjustments panel), <code>state.js</code> / <code>history.js</code> / <code>.pfg</code> (store the settings), <code>agent-tools.js</code> (<code>apply_adjustments</code> writes settings, not pixels)</li><li>Effort: Minimal M · Effective L · Powerful L</li><li>Needs first: nothing (this is a foundation)</li><li>Agent tool: <code>set_adjustments { layer, adjustments: [{ type, ...params }] }</code> and <code>remove_adjustment { layer, index }</code></li></ul>
+<h3>Risks</h3>
+<ul><li>Speed is the main risk. Rerunning blur and sharpen on every redraw, including every brush stroke, is too slow, so each layer's result must be cached and recomputed only when its settings change.</li><li>Grain needs a fixed random seed, or it changes on every redraw.</li><li>This changes what History entries and the agent's layer guard mean.</li></ul>
+</section>
+<section class="card"><h2><span class="num">3</span>Scale, rotate and flip a pasted-in element</h2>
+<p class="verdict">Judge's verdict: Principle 1, Job first. Fitting a placed element is a basic compositing job that PixelForge can't do at all, because the Move tool only slides a layer. The perspective tool later builds on the same handles.</p>
+<h3>Evidence</h3>
+<ul><li>Weight: <span class="rate r-Medium">Medium</span> — <a href="https://helpx.adobe.com/nz/photoshop-elements/using/transforming.html" target="_blank" rel="noopener">Adobe: transforming (Elements)</a>. Only the Elements page surfaced, so this is thin.</li><li>Demand: <span class="rate r-Medium">Medium</span> — <a href="https://community.adobe.com/t5/photoshop-ecosystem-discussions/can-t-seem-to-scale-non-proportionally-anymore/m-p/10108661" target="_blank" rel="noopener">Can't scale non-proportionally anymore</a></li><li>Pain: <span class="rate r-Medium">Medium</span> — <a href="https://community.adobe.com/t5/photoshop/why-did-adobe-change-shift-transform-functionality/m-p/10178410" target="_blank" rel="noopener">Why did Adobe change Shift-transform</a>, <a href="https://community.adobe.com/bug-reports-711/p-doesn-t-constrain-proportions-when-resizing-from-side-handle-while-holding-shift-key-659712/index11.html" target="_blank" rel="noopener">Bug thread, at least 11 pages</a></li><li>Leaner path: Pixelmator Pro's Arrange tool puts on-canvas handles, a rotate wheel, typed width, height and angle fields, and one-click flip buttons in a single pane (<a href="https://support.apple.com/guide/pixelmator-pro/pix9810872af/mac" target="_blank" rel="noopener">Pixelmator Pro guide</a>).</li></ul>
+<h3>Photoshop's way vs the lean way</h3>
+<p>Photoshop's Free Transform leans on modifier keys. When Adobe reversed what Shift does in version 20, getting the old behavior back took a hidden settings file. The lean model shows everything on screen: corners scale in proportion, edges stretch, a handle rotates, and typed fields and flip buttons sit in the options bar.</p>
+<h3>Approach</h3>
+<ul><li>Minimal: Flip Horizontal and Flip Vertical commands, plus a dialog for typed scale and rotation.</li><li>Effective: a transform tool with on-canvas handles. Corners keep proportions by default. Typed width, height and angle sit in the options bar.</li><li>Powerful: the transform is stored and applied when drawing, so repeated resizing never loses quality. Corner-pinning for perspective comes next.</li></ul>
+<h3>Outcome</h3>
+<p>Drop a product or a person into a scene and size, angle and mirror it to fit. That's impossible today.</p>
+<h3>Build plan (rough)</h3>
+<ul><li>Files: <code>tools.js</code> (transform tool, handles drawn on the overlay canvas), <code>layers.js</code> (content bounds of a layer), <code>ui.js</code> (menu and options bar), <code>agent-tools.js</code></li><li>Effort: Minimal S · Effective M · Powerful L</li><li>Needs first: nothing, though layers fill the whole document, so the tool must first find each layer's content bounds. Aligning layers would reuse that later.</li><li>Agent tool: <code>transform_layer { layer, scale_x?, scale_y?, rotate?, flip_h?, flip_v?, x?, y? }</code></li></ul>
+<h3>Risks</h3>
+<ul><li>Each scale or rotate in the destructive versions resamples the pixels, so quality drops with repeated edits. The powerful version exists to avoid that.</li><li>Transforming a text layer must update its text record, or the text loses editability.</li></ul>
+</section>
+<section class="card"><h2><span class="num">4</span>Remove or replace an image's background</h2>
+<p class="verdict">Judge's verdict: Principle 6, Composite-first. Demand is high and the evidence solid, and the modern version is one menu item. Built after masks, it produces a mask instead of erased pixels.</p>
+<h3>Evidence</h3>
+<ul><li>Weight: <span class="rate r-High">High</span> — <a href="https://helpx.adobe.com/photoshop/using/quick-actions/remove-background.html" target="_blank" rel="noopener">Adobe: Remove Background quick action</a>, <a href="https://helpx.adobe.com/nz/photoshop/desktop/repair-retouch/remove-objects-fill-space/remove-background-in-your-images.html" target="_blank" rel="noopener">Adobe: remove background</a></li><li>Demand: <span class="rate r-High">High</span> — <a href="https://community.adobe.com/questions-712/removing-backround-photoshop-1166015" target="_blank" rel="noopener">Removing background</a>, <a href="https://community.adobe.com/questions-712/remove-background-1182008" target="_blank" rel="noopener">Remove background</a>, <a href="https://photoshopgurus.com/forum/tags/background/page-9" target="_blank" rel="noopener">PhotoshopGurus background tag</a></li><li>Pain: <span class="rate r-Medium">Medium</span> — <a href="https://community.adobe.com/t5/photoshop-ecosystem-discussions/background-remove-from-hair/m-p/9367201" target="_blank" rel="noopener">Background removal from hair</a></li><li>Leaner path: Photopea makes it one menu item, Select › Remove BG (<a href="https://www.photopea.com/tuts/magic-cut-remove-image-background-online/" target="_blank" rel="noopener">Photopea</a>). Pixelmator Pro also cleans up edge colors automatically, so there's no halo (<a href="https://www.pixelmator.com/blog/2021/11/23/major-update-adds-ai-powered-background-removal-to-pixelmator-pro" target="_blank" rel="noopener">Pixelmator blog</a>).</li></ul>
+<h3>Photoshop's way vs the lean way</h3>
+<p>Photoshop's one-click removal sits in a Quick Actions panel rather than an obvious menu, and it fails on hair or with no clear subject. The lean model is one command that produces a mask, with edge colors already cleaned up, which you can refine or undo.</p>
+<h3>Approach</h3>
+<ul><li>Minimal: Layer › Remove Background adds a mask (from pick 1) generated by a subject-segmentation model.</li><li>Effective: adds automatic edge-color cleanup, and Replace Background: the mask plus a new image or color layer placed below.</li><li>Powerful: choose which subject to keep when there are several, then refine the edges with pick 5.</li></ul>
+<h3>Outcome</h3>
+<p>Cut a person or product out of a photo in one step, and keep it reversible.</p>
+<h3>Build plan (rough)</h3>
+<ul><li>Files: new <code>js/segment.js</code> (model loading and inference), <code>layers.js</code> / <code>ui.js</code> (menu), <code>agent-tools.js</code></li><li>Effort: Minimal M · Effective M · Powerful L</li><li>Needs first: masks (pick 1)</li><li>Agent tool: <code>remove_background { layer }</code>, which adds a mask and leaves the layer's pixels untouched</li></ul>
+<h3>Risks</h3>
+<ul><li>Needs an AI model. Running it in the browser means a large download and speed that depends on the device; running it through the proxy means per-image cost, latency, and uploading your images to a server.</li><li>Check the model's license.</li><li>Hair quality depends on the model.</li></ul>
+</section>
+<section class="card"><h2><span class="num">5</span>Get clean, soft edges on a cutout</h2>
+<p class="verdict">Judge's verdict: Principle 6, Composite-first. This job had the highest pain and the most forum threads in its group. Feather, smooth and shrink/grow controls on a mask are a moderate build, and they refine what background removal produces.</p>
+<h3>Evidence</h3>
+<ul><li>Weight: <span class="rate r-High">High</span> — <a href="https://helpx.adobe.com/ie/photoshop/desktop/make-selections/automatic-color-based-selections/make-improved-hair-selections.html" target="_blank" rel="noopener">Adobe: improved hair selections</a>, <a href="https://helpx.adobe.com/in_hi/photoshop/how-to/make-precise-selections-in-select-mask.html" target="_blank" rel="noopener">Adobe: Select and Mask</a></li><li>Demand: <span class="rate r-High">High</span> — <a href="https://community.adobe.com/t5/photoshop-ecosystem-discussions/dealing-with-quot-halo-quot-using-the-select-and-mask-but-not-that-kind-of-halo/m-p/10299528" target="_blank" rel="noopener">Halo using Select and Mask</a>, <a href="https://community.adobe.com/t5/photoshop-ecosystem-discussions/selecting-hair-using-refine-edge-brush/m-p/9722621" target="_blank" rel="noopener">Selecting hair with Refine Edge Brush</a></li><li>Pain: <span class="rate r-High">High</span> — <a href="https://community.adobe.com/t5/photoshop-ecosystem-discussions/does-the-select-and-mask-feature-actually-work-for-anybody-out-there/m-p/9827630/highlight/true" target="_blank" rel="noopener">Does Select and Mask actually work for anybody?</a>, <a href="https://community.adobe.com/t5/photoshop-ecosystem-discussions/refine-edge-brush-not-working-photoshop-cc-2019-select-mask/m-p/10356507" target="_blank" rel="noopener">Refine Edge Brush not working</a></li><li>Leaner path: Affinity Photo's Refine Selection uses one matte brush painted along hair, and it re-reads foreground against background (<a href="https://affinity.help/photo2/en-US.lproj/pages/Selections/selections_refine.html" target="_blank" rel="noopener">Affinity help</a>). Pixelmator Pro cleans edge colors automatically (<a href="https://9to5mac.com/2021/11/23/pixelmator-pro-background-removal/" target="_blank" rel="noopener">9to5Mac</a>).</li></ul>
+<h3>Photoshop's way vs the lean way</h3>
+<p>Photoshop sends you to a separate Select and Mask workspace full of settings, and its edge brush can leave ghosted or blocky hair. The lean model puts a few named edge controls on the mask itself, and lets you preview the cutout against black, white or a checkerboard.</p>
+<h3>Approach</h3>
+<ul><li>Minimal: Feather and Shrink/Grow sliders on a mask, kept as editable settings.</li><li>Effective: adds Smooth, an edge-color cleanup control, and a live preview against black, white or a checkerboard.</li><li>Powerful: a refine brush for hair and fur, backed by a matting model.</li></ul>
+<h3>Outcome</h3>
+<p>Cutouts stop looking pasted on: no hard edges and no colored halo.</p>
+<h3>Build plan (rough)</h3>
+<ul><li>Files: the mask code from pick 1 (edge operations), <code>ui.js</code> (mask edge panel), <code>agent-tools.js</code></li><li>Effort: Minimal S · Effective M · Powerful L</li><li>Needs first: masks (pick 1). It's most useful once background removal (pick 4) exists.</li><li>Agent tool: <code>refine_mask_edge { layer, feather?, shrink_grow?, smooth?, clean_edge_color? }</code></li></ul>
+<h3>Risks</h3>
+<ul><li>Feathering alone can't recover fine hair. That needs a model, the same server-or-download tradeoff as pick 4.</li></ul>
+</section>
+<section class="card"><h2><span class="num">6</span>Make a pasted-in element match the background's color and light</h2>
+<p class="verdict">Judge's verdict: Principle 6, Composite-first. This is the core matching job, and it needs no AI model: the colors can be matched statistically against a reference layer. Built after editable adjustments, the result stays editable instead of baked.</p>
+<h3>Evidence</h3>
+<ul><li>Weight: <span class="rate r-High">High</span> — <a href="https://www.adobe.com/learn/photoshop/web/blend-subjects-with-harmonize" target="_blank" rel="noopener">Adobe Learn: Harmonize</a>, <a href="https://research.adobe.com/news/the-research-behind-harmonize" target="_blank" rel="noopener">Adobe Research: Harmonize</a>, <a href="https://tutvid.com/photoshop/how-to-match-color-and-light-in-photoshop-3-step-process/" target="_blank" rel="noopener">tutvid: match color and light</a></li><li>Demand: <span class="rate r-Medium">Medium</span> — <a href="https://phlearn.com/?p=511102" target="_blank" rel="noopener">PHLEARN: match lighting in composites</a>, <a href="https://insider.kelbyone.com/match-colors-in-composites-with-three-buttons-by-unmesh-dinda/" target="_blank" rel="noopener">KelbyOne: match colors in composites</a>, <a href="https://community.adobe.com/questions-712/match-color-vs-harmonization-neural-filter-1159358" target="_blank" rel="noopener">Match Color vs Harmonization</a></li><li>Pain: <span class="rate r-High">High</span> — <a href="https://community.adobe.com/t5/photoshop/using-a-selection-with-match-colors/td-p/9784031" target="_blank" rel="noopener">Using a selection with Match Color</a>, <a href="https://community.adobe.com/bug-reports-699/p-new-harmonization-button-667705/index1.html" target="_blank" rel="noopener">Harmonize button bug report</a>, <a href="https://community.adobe.com/t5/photoshop-ecosystem-discussions/photoshop-26-9-missing-harmonize-option-and-camera-raw-17-5-not-opening/m-p/15501581" target="_blank" rel="noopener">Harmonize missing in 26.9</a></li><li>Leaner path: In Pixelmator Pro you drag a reference image onto the adjustments panel, and ML Match Colors sets editable adjustments to match (<a href="https://www.pixelmator.com/blog/2019/05/14/pixelmator-pro-updated-with-new-core-ml-powered-ml-match-colors-feature/" target="_blank" rel="noopener">Pixelmator blog</a>).</li></ul>
+<h3>Photoshop's way vs the lean way</h3>
+<p>Photoshop's Match Color has a reputation for unreliable results. Its newer Harmonize has crashed or gone missing between versions, and the manual route stacks several clipped adjustment layers. The lean model is one command, "match this layer to that one", which produces adjustments you can still edit.</p>
+<h3>Approach</h3>
+<ul><li>Minimal: Match to Background shifts a layer's average color, brightness and contrast toward the layers below it.</li><li>Effective: the match produces editable adjustments (pick 2) with a strength slider, and can sample only the area around the element.</li><li>Powerful: also matches grain and softness. The agent and critic can then fine-tune the match.</li></ul>
+<h3>Outcome</h3>
+<p>A pasted element looks like it was shot in the same light as the scene.</p>
+<h3>Build plan (rough)</h3>
+<ul><li>Files: new matching function (<code>ui.js</code> or a new <code>js/match.js</code>), <code>agent-tools.js</code></li><li>Effort: Minimal S · Effective M · Powerful L</li><li>Needs first: editable adjustments (pick 2) for an editable result. Masks (pick 1) are needed to sample only part of the image.</li><li>Agent tool: <code>match_to_background { layer, reference_layer?, strength? }</code></li></ul>
+<h3>Risks</h3>
+<ul><li>Statistical matching can overshoot between very different scenes, so it needs a strength control.</li><li>Transparent pixels must be left out of the statistics.</li><li>It matches overall color and tone, not the direction of the light.</li></ul>
+</section>
+<section class="section"><h2>Considered and rejected</h2>
+<ul><li><strong>Select a person or main subject automatically</strong>: rejected under the Never rule, because it needs masks and a segmentation model first. Revisit after background removal, which can share the same model. Demand was inferred mostly from threads about the feature breaking.</li><li><strong>Paste an image from the clipboard as a new layer</strong>: strong, but deferred. It's a cheap win (small, and reuses the drag-and-drop code), but the evidence for documentation depth and demand is thin. A good filler task between foundation builds.</li><li><strong>Brighten shadows or tame highlights separately, in plain language</strong>: strong, but deferred. Under the Never rule and Principle 4, a baked version built now would have to be rebuilt. Build it as one of the first adjustments once editable adjustments exist.</li><li><strong>Change just one color range</strong>: rejected under the Never rule, because the editable version needs editable adjustments. Demand is thin, and Principle 2 applies in part, since hue and saturation already cover some of the job.</li><li><strong>Save a look and reuse it on other images (presets)</strong>: strong, but deferred. It's the missing presets foundation (Principle 5), but a preset is saved adjustment settings, so it waits on editable adjustments. Next in line once those land.</li><li><strong>Blur the background to fake depth of field</strong>: strong, but deferred. Pain is high, but a graded falloff needs masks, and a lens-style blur alone only upgrades the existing blur (Principle 2). Revisit after masks.</li><li><strong>Add a drop shadow, glow or outline to a cutout or text</strong>: strong, but deferred. The evidence is solid, it needs no foundation, and it can be editable from the start. It lost only to the jobs Principle 6 ranks first (selecting, masking, matching). First in line for the next round.</li><li><strong>Remove an unwanted object, person or blemish</strong>: strong, but deferred. Demand and pain are high, but good results need an inpainting model (a large build). The smaller non-AI clone brush gives weak results and would copy a darkroom-era workflow (Never rule).</li><li><strong>Resize or upscale an image without it going soft</strong>: strong, but deferred. Plain resampling is small and the pain is high, but it's a finishing and output job, not compositing (Principle 6). A quick win to slot in; AI upscaling waits.</li><li><strong>Crop to a set aspect ratio and straighten a horizon</strong>: rejected under Principles 2 and 6. It extends the crop PixelForge already has, its composite fit is medium, and the demand evidence rests on bug threads.</li><li><strong>Match grain or noise between combined images</strong>: strong, but deferred. The pain is clear and no mainstream editor does true matching, so it would set PixelForge apart, but the evidence is thin on volume. Grain already exists, and matched grain should be editable (Principle 4). Revisit after editable adjustments.</li><li><strong>Make a pasted element sit on the scene's plane (perspective)</strong>: rejected under the Never rule. It's best built after scale/rotate/flip, since it shares the handles. The pain evidence is solid, so revisit right after that.</li><li><strong>Export one design at several sizes for social platforms</strong>: rejected under Principle 6. It's an output step with medium composite fit, and the demand evidence is thin.</li><li><strong>Line up and evenly space layers, with snapping</strong>: rejected under Principle 6. It's layout more than blending, the leaner-path evidence is thin, and it first needs layer content bounds.</li><li><strong>Give an image an overall color grade in one control</strong>: rejected under Principle 2. Color balance and gradient layers already cover part of this job, so fix the known color-balance weighting bug first. The pain evidence is thin, and demand was inferred from tutorials.</li></ul>
+</section>
+<section class="section"><h2>Judge's note</h2>
+<p>Masks and editable adjustments carry this plan. Between them they unblock nine of the other candidates, and nearly every compositing job depends on one or both. Scale/rotate/flip is the third missing basic. The three picks after the foundations (background removal, clean edges, color matching) are the cut-out, refine and match loop that defines a composite. The strongest jobs held back are presets and plain-language shadow and highlight controls, which both wait on editable adjustments, and drop shadows and outlines, which need no foundation.</p>
+</section>
+<section class="section"><h2>Signals note</h2>
+<p>The Weight, Demand and Pain ratings are proxies from public writing: documentation depth, forum threads and tutorial supply. They are not usage data, and no figures were measured. Reddit couldn't be searched in this run, so Demand rests on Adobe Community, PhotoshopGurus, one aggregator and the volume of tutorials. Ratings marked thin in the research were weighted down by the judge. Feasibility ratings are estimates from reading PixelForge's code, not measured build times.</p>
+</section>
+</main>
+</body>
+</html>

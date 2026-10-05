@@ -61,6 +61,11 @@
       <div class="dd-item" onclick="mergeDown()">Merge Down <span class="shortcut">⌘E</span></div>
     </div>
   </div>
+  <div class="menu-item" id="menu-help">Help
+    <div class="dropdown">
+      <div class="dd-item" onclick="closeMenus(); window.open('quarry/index.html', '_blank', 'noopener')">Feature Quarry</div>
+    </div>
+  </div>
   <input type="file" id="file-input" accept="image/*" style="display:none" onchange="loadImageFile(event)">
 </div>
 

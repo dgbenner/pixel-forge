@@ -115,6 +115,33 @@ Risks
 **Last:** a "Signals note" saying the evidence ratings are proxies from public writing, not usage
 data.
 
+## Step 7: Add this run to the page
+
+The Feature Quarry page (quarry/index.html) reads its runs from `quarry/runs/`.
+Never overwrite or delete an earlier run's file.
+
+a) Write `quarry/runs/YYYY-MM-DD.json` for this run, in exactly the same shape as the
+   existing run files:
+   - run: today's date, YYYY-MM-DD
+   - report: path to this run's .md report
+   - candidates_considered: number
+   - judge_summary: the judge's note, 2–3 sentences
+   - sources: one sentence naming the sources searched and any that failed
+   - code_findings: array of short strings (bugs or risks found in PixelForge's code)
+   - candidates: every candidate. Reuse the same id as in earlier runs when it's the same
+     job, so the page can tell what's new and what moved. Picked ones (status "picked",
+     rank 1–6) carry all fields: id, status, rank, title, short, why, principle, verdict,
+     size, foundation, needs, outcome, ps, lean, leanWho, approach [[level, size, text] x3],
+     sig [[signal, H|M|L, sources] x3], files, tool, risks [].
+     Others carry: id, status ("waiting" | "later" | "rejected"), title, why, and needs if blocked.
+   If a run already exists for today, add -2, -3 to the date (e.g. 2026-10-12-2).
+
+b) Add an entry for it to `quarry/runs/index.json`:
+   { run, file: "runs/<name>.json", report, candidates_considered,
+     counts: { picked, waiting, later, rejected } }
+
+Validate that both files parse as JSON before finishing.
+
 ## Rules
 
 - No code changes, no branches, no commits except the report files.

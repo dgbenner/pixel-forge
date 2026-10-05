@@ -1,0 +1,16 @@
+{
+  "runs": [
+    {
+      "run": "2026-10-04",
+      "file": "runs/2026-10-04.json",
+      "report": "quarry/2026-10-04-report.md",
+      "candidates_considered": 21,
+      "counts": {
+        "picked": 6,
+        "waiting": 7,
+        "later": 4,
+        "rejected": 4
+      }
+    }
+  ]
+}

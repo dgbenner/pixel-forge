@@ -1,0 +1,456 @@
+{
+  "run": "2026-10-04",
+  "report": "quarry/2026-10-04-report.md",
+  "candidates_considered": 21,
+  "judge_summary": "Masks and editable adjustments carry this plan. Between them they unblock nine of the other candidates. Scale, rotate and flip is the third missing basic. The three picks after the foundations (background removal, clean edges, color matching) are the cut-out, refine and match loop that defines a composite.",
+  "sources": "Adobe documentation, Adobe Community, PhotoshopGurus, Photopea, Affinity Photo, Pixelmator Pro, Canva. Reddit couldn't be searched in this run.",
+  "code_findings": [
+    "Color balance has a weighting bug; fix before building any new grading.",
+    "Nine places copy a layer; masks must be carried through all of them or they vanish on undo.",
+    "Layers fill the whole document, so transform needs to find each layer's content bounds first."
+  ],
+  "candidates": [
+    {
+      "id": "masks",
+      "status": "picked",
+      "rank": 1,
+      "title": "Hide part of a layer without erasing it",
+      "short": "Masks",
+      "why": "Every cutout today erases pixels for good. Masks make every cut fixable.",
+      "principle": "Composite-first",
+      "verdict": "The missing masking foundation. Unlocks background removal, clean edges, depth blur and area-limited adjustments.",
+      "size": "S",
+      "foundation": true,
+      "needs": null,
+      "outcome": "Cut out and blend elements without destroying anything. A bad cut can be fixed at any time.",
+      "ps": "A mask is a separate grayscale thumbnail. People paint on the image when they meant the mask, and mix up whether black hides or reveals.",
+      "lean": "One mask per layer, an explicit 'editing the mask' mode, and brush colors named for what they do: hide and reveal.",
+      "leanWho": "Photopea (green keep / red remove strokes), Pixelmator Pro (one-line rule, invert and swap shortcuts)",
+      "approach": [
+        [
+          "Minimal",
+          "S",
+          "One mask per layer, starts revealed or from a selection. Brush hides or reveals. Turn off, delete or apply."
+        ],
+        [
+          "Effective",
+          "M",
+          "Adds invert, a mask thumbnail in Layers, and masks that survive undo, duplicate and save/load."
+        ],
+        [
+          "Powerful",
+          "L",
+          "Gradient masks, editable feather and density, clipping a layer to the one below."
+        ]
+      ],
+      "sig": [
+        [
+          "Weight",
+          "H",
+          "Adobe: add layer masks; apply or delete masks"
+        ],
+        [
+          "Demand",
+          "H",
+          "Forum threads: 'Layer masks, what am I doing wrong', 'Brush not working on mask'"
+        ],
+        [
+          "Pain",
+          "M",
+          "'Brush not working on mask', 'Eraser won't work on placed image'"
+        ]
+      ],
+      "files": "canvas.js, tools.js, layers.js, state.js, history.js, ui.js, agent-tools.js",
+      "tool": "add_mask { layer, source: reveal_all | hide_all | selection | radial | linear, invert? }",
+      "risks": [
+        "Every function that copies a layer must carry the mask; missing one makes masks vanish on undo.",
+        "Masked layers cost an extra draw on every render.",
+        "History snapshots get bigger."
+      ]
+    },
+    {
+      "id": "editable-adj",
+      "status": "picked",
+      "rank": 2,
+      "title": "Keep color and tone changes editable later",
+      "short": "Editable adjustments",
+      "why": "Every adjustment bakes pixels now. This makes a grade changeable an hour later.",
+      "principle": "Non-destructive by default",
+      "verdict": "The second missing foundation. Unlocks presets, shadow/highlight controls, per-color changes and editable color matching.",
+      "size": "M",
+      "foundation": true,
+      "needs": null,
+      "outcome": "Change a grade later without redoing work. The editing agent's changes become fully reversible too.",
+      "ps": "Two systems: adjustment layers affect everything below unless clipped, and filters only stay editable on Smart Objects.",
+      "lean": "One system: adjustments are settings on the layer they change, in a stack you can reorder, toggle or bake.",
+      "leanWho": "Affinity Photo (live filters stack like adjustments), Pixelmator Pro (adjustments live on the layer)",
+      "approach": [
+        [
+          "Minimal",
+          "M",
+          "Hue, saturation, brightness and contrast stored as layer settings and applied when drawing."
+        ],
+        [
+          "Effective",
+          "L",
+          "Every existing adjustment joins a per-layer stack you can reorder and toggle, plus Bake."
+        ],
+        [
+          "Powerful",
+          "L",
+          "Adjustment layers that affect everything below, optionally limited, with masks."
+        ]
+      ],
+      "sig": [
+        [
+          "Weight",
+          "H",
+          "Adobe: adjustment layers; Photopea: adjustments and filters"
+        ],
+        [
+          "Demand",
+          "H",
+          "'Adjustment layer to target only one layer', 'affecting all lower layers'"
+        ],
+        [
+          "Pain",
+          "H",
+          "Feature requests for non-destructive filter layers"
+        ]
+      ],
+      "files": "canvas.js, filters.js, ui.js, state.js, history.js, agent-tools.js",
+      "tool": "set_adjustments { layer, adjustments: [{ type, ...params }] } \u00b7 remove_adjustment { layer, index }",
+      "risks": [
+        "Speed: blur and sharpen can't rerun on every brush stroke, so results must be cached.",
+        "Grain needs a fixed random seed or it flickers.",
+        "Changes what History entries and the agent's layer guard mean."
+      ]
+    },
+    {
+      "id": "transform",
+      "status": "picked",
+      "rank": 3,
+      "title": "Scale, rotate and flip a pasted-in element",
+      "short": "Transform",
+      "why": "The Move tool only slides a layer. You can't size or angle anything you place.",
+      "principle": "Job first",
+      "verdict": "A basic compositing job PixelForge can't do at all. Perspective later builds on the same handles.",
+      "size": "S",
+      "foundation": false,
+      "needs": null,
+      "outcome": "Drop a product or person into a scene and size, angle and mirror it to fit.",
+      "ps": "Free Transform leans on modifier keys. When Adobe flipped what Shift does, getting it back took a hidden settings file.",
+      "lean": "Everything on screen: corners scale in proportion, edges stretch, a handle rotates, typed fields and flip buttons in the options bar.",
+      "leanWho": "Pixelmator Pro (Arrange tool: handles, rotate wheel, typed fields, flip buttons in one pane)",
+      "approach": [
+        [
+          "Minimal",
+          "S",
+          "Flip horizontal and vertical, plus a dialog for typed scale and rotation."
+        ],
+        [
+          "Effective",
+          "M",
+          "On-canvas handles; corners keep proportions; typed width, height and angle."
+        ],
+        [
+          "Powerful",
+          "L",
+          "Transform stored and applied when drawing, so resizing never loses quality."
+        ]
+      ],
+      "sig": [
+        [
+          "Weight",
+          "M",
+          "Only the Photoshop Elements page surfaced; thin."
+        ],
+        [
+          "Demand",
+          "M",
+          "'Can't scale non-proportionally anymore'"
+        ],
+        [
+          "Pain",
+          "M",
+          "'Why did Adobe change Shift-transform', 11-page bug thread"
+        ]
+      ],
+      "files": "tools.js, layers.js, ui.js, agent-tools.js",
+      "tool": "transform_layer { layer, scale_x?, scale_y?, rotate?, flip_h?, flip_v?, x?, y? }",
+      "risks": [
+        "Destructive versions lose quality with each resize.",
+        "Transforming a text layer must update its text record."
+      ]
+    },
+    {
+      "id": "remove-bg",
+      "status": "picked",
+      "rank": 4,
+      "title": "Remove or replace an image's background",
+      "short": "Background removal",
+      "why": "One command that cuts out a person or product, as a mask you can still fix.",
+      "principle": "Composite-first",
+      "verdict": "High demand and solid evidence; the modern version is one menu item. After masks, it produces a mask instead of erased pixels.",
+      "size": "M",
+      "foundation": false,
+      "needs": "Masks",
+      "outcome": "Cut a person or product out of a photo in one step, and keep it reversible.",
+      "ps": "One-click removal is hidden in a Quick Actions panel, and fails on hair or with no clear subject.",
+      "lean": "One command that makes a mask, with edge colors already cleaned up, which you can refine or undo.",
+      "leanWho": "Photopea (Select \u203a Remove BG), Pixelmator Pro (automatic edge-color cleanup)",
+      "approach": [
+        [
+          "Minimal",
+          "M",
+          "Layer \u203a Remove Background adds a mask from a segmentation model."
+        ],
+        [
+          "Effective",
+          "M",
+          "Adds edge-color cleanup and Replace Background."
+        ],
+        [
+          "Powerful",
+          "L",
+          "Choose which subject to keep; refine edges."
+        ]
+      ],
+      "sig": [
+        [
+          "Weight",
+          "H",
+          "Adobe: Remove Background quick action"
+        ],
+        [
+          "Demand",
+          "H",
+          "Many 'removing background' threads; PhotoshopGurus tag"
+        ],
+        [
+          "Pain",
+          "M",
+          "'Background removal from hair'"
+        ]
+      ],
+      "files": "new js/segment.js, layers.js, ui.js, agent-tools.js",
+      "tool": "remove_background { layer }",
+      "risks": [
+        "Needs an AI model: a big in-browser download, or per-image cost and uploads through the proxy.",
+        "Check the model's license.",
+        "Hair quality depends on the model."
+      ]
+    },
+    {
+      "id": "edges",
+      "status": "picked",
+      "rank": 5,
+      "title": "Get clean, soft edges on a cutout",
+      "short": "Edge refinement",
+      "why": "Highest pain in its group. Cutouts stop looking pasted on.",
+      "principle": "Composite-first",
+      "verdict": "Feather, smooth and shrink/grow on a mask are a moderate build, and they refine what background removal produces.",
+      "size": "S",
+      "foundation": false,
+      "needs": "Masks",
+      "outcome": "No hard edges and no colored halo.",
+      "ps": "A separate Select and Mask workspace full of settings, and an edge brush that can leave ghosted or blocky hair.",
+      "lean": "A few named edge controls on the mask itself, with a preview against black, white or checkerboard.",
+      "leanWho": "Affinity Photo (one matte brush for hair), Pixelmator Pro (automatic edge-color cleanup)",
+      "approach": [
+        [
+          "Minimal",
+          "S",
+          "Feather and shrink/grow sliders on a mask, kept editable."
+        ],
+        [
+          "Effective",
+          "M",
+          "Adds smooth, edge-color cleanup and a live preview background."
+        ],
+        [
+          "Powerful",
+          "L",
+          "A refine brush for hair and fur, backed by a matting model."
+        ]
+      ],
+      "sig": [
+        [
+          "Weight",
+          "H",
+          "Adobe: improved hair selections; Select and Mask"
+        ],
+        [
+          "Demand",
+          "H",
+          "'Halo using Select and Mask', 'Selecting hair with Refine Edge'"
+        ],
+        [
+          "Pain",
+          "H",
+          "'Does Select and Mask actually work for anybody?'"
+        ]
+      ],
+      "files": "mask code from pick 1, ui.js, agent-tools.js",
+      "tool": "refine_mask_edge { layer, feather?, shrink_grow?, smooth?, clean_edge_color? }",
+      "risks": [
+        "Feathering alone can't recover fine hair; that needs a model."
+      ]
+    },
+    {
+      "id": "match",
+      "status": "picked",
+      "rank": 6,
+      "title": "Make a pasted-in element match the scene's color and light",
+      "short": "Color matching",
+      "why": "The core matching job, and it needs no AI model.",
+      "principle": "Composite-first",
+      "verdict": "Colors can be matched statistically against a reference layer. After editable adjustments, the result stays editable.",
+      "size": "S",
+      "foundation": false,
+      "needs": "Editable adjustments",
+      "outcome": "A pasted element looks shot in the same light as the scene.",
+      "ps": "Match Color is unreliable, Harmonize has crashed or gone missing between versions, and the manual route stacks clipped adjustment layers.",
+      "lean": "One command, 'match this layer to that one', that produces adjustments you can still edit.",
+      "leanWho": "Pixelmator Pro (drag a reference image onto adjustments; ML Match Colors)",
+      "approach": [
+        [
+          "Minimal",
+          "S",
+          "Match to Background shifts a layer's color, brightness and contrast toward what's below."
+        ],
+        [
+          "Effective",
+          "M",
+          "Produces editable adjustments with a strength slider; can sample just the surroundings."
+        ],
+        [
+          "Powerful",
+          "L",
+          "Also matches grain and softness; the agent and critic can fine-tune."
+        ]
+      ],
+      "sig": [
+        [
+          "Weight",
+          "H",
+          "Adobe Learn and Research: Harmonize; tutvid tutorial"
+        ],
+        [
+          "Demand",
+          "M",
+          "PHLEARN and KelbyOne tutorials on matching light"
+        ],
+        [
+          "Pain",
+          "H",
+          "Harmonize bug reports; 'Harmonize missing in 26.9'"
+        ]
+      ],
+      "files": "new js/match.js (or ui.js), agent-tools.js",
+      "tool": "match_to_background { layer, reference_layer?, strength? }",
+      "risks": [
+        "Can overshoot between very different scenes; needs a strength control.",
+        "Transparent pixels must be left out.",
+        "Matches color and tone, not light direction."
+      ]
+    },
+    {
+      "id": "auto-select",
+      "status": "waiting",
+      "title": "Select the main subject automatically",
+      "needs": "Masks + background removal",
+      "why": "Can share background removal's model. Demand came mostly from threads about Photoshop's version breaking."
+    },
+    {
+      "id": "shadows",
+      "status": "waiting",
+      "title": "Brighten shadows or tame highlights, in plain language",
+      "needs": "Editable adjustments",
+      "why": "A baked version now would have to be rebuilt. One of the first adjustments to add after."
+    },
+    {
+      "id": "one-color",
+      "status": "waiting",
+      "title": "Change just one color range",
+      "needs": "Editable adjustments",
+      "why": "Hue and saturation already cover some of it; demand is thin."
+    },
+    {
+      "id": "presets",
+      "status": "waiting",
+      "title": "Save a look and reuse it on other images",
+      "needs": "Editable adjustments",
+      "why": "The missing presets foundation. A preset is saved adjustment settings. Next in line."
+    },
+    {
+      "id": "depth-blur",
+      "status": "waiting",
+      "title": "Blur the background to fake depth of field",
+      "needs": "Masks",
+      "why": "High pain, but a graded falloff needs masks."
+    },
+    {
+      "id": "grain-match",
+      "status": "waiting",
+      "title": "Match grain between combined images",
+      "needs": "Editable adjustments",
+      "why": "No mainstream editor does true matching, so it would set PixelForge apart. Evidence volume is thin."
+    },
+    {
+      "id": "perspective",
+      "status": "waiting",
+      "title": "Make a pasted element sit on the scene's plane",
+      "needs": "Transform",
+      "why": "Shares transform's handles. Solid pain evidence; revisit right after transform."
+    },
+    {
+      "id": "shadow-glow",
+      "status": "later",
+      "title": "Add a drop shadow, glow or outline",
+      "why": "Solid evidence, needs no foundation, can be editable from the start. First in line next round."
+    },
+    {
+      "id": "paste",
+      "status": "later",
+      "title": "Paste an image from the clipboard as a new layer",
+      "why": "A cheap win that reuses drag-and-drop code. Good filler between foundation builds."
+    },
+    {
+      "id": "upscale",
+      "status": "later",
+      "title": "Resize or upscale without going soft",
+      "why": "An output job, not compositing. Plain resampling is a quick win; AI upscaling waits."
+    },
+    {
+      "id": "object-removal",
+      "status": "later",
+      "title": "Remove an unwanted object, person or blemish",
+      "why": "High demand, but good results need an inpainting model. A clone brush would copy a darkroom-era workflow."
+    },
+    {
+      "id": "crop-ratio",
+      "status": "rejected",
+      "title": "Crop to a set ratio and straighten",
+      "why": "Extends the existing crop; medium composite fit; demand evidence was bug threads."
+    },
+    {
+      "id": "export-sizes",
+      "status": "rejected",
+      "title": "Export one design at several social sizes",
+      "why": "An output step, not compositing; thin demand."
+    },
+    {
+      "id": "align",
+      "status": "rejected",
+      "title": "Line up and space layers with snapping",
+      "why": "Layout more than blending; needs layer content bounds first."
+    },
+    {
+      "id": "one-grade",
+      "status": "rejected",
+      "title": "One-control overall color grade",
+      "why": "Color balance and gradients already cover part of it. Fix the color-balance bug first."
+    }
+  ]
+}
