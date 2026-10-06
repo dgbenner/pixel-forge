@@ -103,7 +103,8 @@ async function runAgent(request, criticOn, reference) {
     final_score: null,
     totals: { input_tokens: 0, output_tokens: 0, ms: 0, steps: 0,
               critic_input_tokens: 0, critic_output_tokens: 0, reviews: 0 },
-    final_image: null
+    final_image: null,
+    verdict: null       // "up" | "down" once you rate the run
   };
   agent.totals = agent.run.totals;
   agent.review = {
@@ -389,7 +390,7 @@ async function agentRunClicked() {
   var reference = agent.reference;
   if (!request && reference) request = 'Match the style of the reference image.';
   if (!request) { agentLogNote('Type a request or choose a reference image first.', true); return; }
-  if (!agentPass()) { agentLogNote('Enter the passphrase first.', true); return; }
+  if (!agentPass()) { agentLogNote('Enter the Agent Password first.', true); return; }
 
   document.getElementById('agent-log').innerHTML = '';
   agent.logText = ['PixelForge agent run · ' + new Date().toLocaleString(), 'Request: ' + request];
@@ -409,6 +410,36 @@ async function agentRunClicked() {
   }
   agent.running = false;
   agentSyncButtons();
+  if (agent.run) {
+    agentCardRunFinished(agent.run);
+    agentLogVerdict(agent.run);
+  }
+}
+
+// Thumbs up/down after a run: would you keep this result? Recorded in the
+// run log and the agent card's tally; can be changed until the next run.
+function agentLogVerdict(run) {
+  var row = agentEl('div', 'agent-verdict');
+  row.appendChild(agentEl('span', null, 'Keep this result?'));
+  var buttons = [['up', '👍', 'Yes, keep it'], ['down', '👎', 'No']].map(function(v) {
+    var b = agentEl('button', null, v[1]);
+    b.type = 'button';
+    b.setAttribute('aria-label', v[2]);
+    b.setAttribute('aria-pressed', 'false');
+    b.onclick = function() {
+      if (run !== agent.run || run.verdict === v[0]) return;
+      var prev = run.verdict || null;
+      run.verdict = v[0];
+      buttons.forEach(function(x) { x.setAttribute('aria-pressed', String(x === b)); });
+      agent.logText.push('— Your verdict: ' + (v[0] === 'up' ? 'keep' : "don't keep"));
+      agentCardVerdict(v[0], prev);
+    };
+    row.appendChild(b);
+    return b;
+  });
+  var log = document.getElementById('agent-log');
+  log.appendChild(row);
+  log.scrollTop = log.scrollHeight;
 }
 
 function agentStopClicked() {

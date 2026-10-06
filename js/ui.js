@@ -514,6 +514,7 @@ function loadProject(project, filename) {
     document.getElementById('status-size').textContent = w + ' \u00D7 ' + h + ' px';
     document.getElementById('fg-color-swatch').style.backgroundColor = state.fgColor;
     document.getElementById('bg-color-swatch').style.backgroundColor = state.bgColor;
+    updateColorUI();
 
     fitToView();
     renderAll();
@@ -605,3 +606,51 @@ document.addEventListener('keydown', function(e) {
   if (key === 'x') swapColors();
   if (key === 'delete' || key === 'backspace') clearLayer();
 });
+
+// ── Resizable right panels ────────────────────────────────
+// The handle on the sidebar's left edge widens all panels together.
+// Width lives in the --panel-w CSS variable and is remembered per browser.
+var PANELS_MIN_W = 220, PANELS_MAX_W = 400, PANELS_W_KEY = 'pf-panels-w';
+
+function setPanelsWidth(w, save) {
+  w = Math.round(Math.max(PANELS_MIN_W, Math.min(PANELS_MAX_W, w)));
+  document.documentElement.style.setProperty('--panel-w', w + 'px');
+  var h = document.getElementById('panels-resize');
+  h.setAttribute('aria-valuenow', w);
+  if (save) { try { localStorage.setItem(PANELS_W_KEY, String(w)); } catch (e) {} }
+  return w;
+}
+
+function initPanelsResize() {
+  var handle = document.getElementById('panels-resize');
+  handle.setAttribute('aria-valuemin', PANELS_MIN_W);
+  handle.setAttribute('aria-valuemax', PANELS_MAX_W);
+  handle.title = 'Drag to widen the panels (double-click to reset)';
+  var saved = null;
+  try { saved = +localStorage.getItem(PANELS_W_KEY); } catch (e) {}
+  setPanelsWidth(saved || PANELS_MIN_W, false);
+
+  var current = function() { return document.getElementById('panels').getBoundingClientRect().width; };
+  handle.addEventListener('pointerdown', function(e) {
+    e.preventDefault();
+    var startX = e.clientX, startW = current();
+    handle.setPointerCapture(e.pointerId);
+    document.body.classList.add('resizing-panels');
+    var move = function(ev) { setPanelsWidth(startW + (startX - ev.clientX), false); };
+    var up = function() {
+      handle.removeEventListener('pointermove', move);
+      handle.removeEventListener('pointerup', up);
+      handle.removeEventListener('pointercancel', up);
+      document.body.classList.remove('resizing-panels');
+      setPanelsWidth(current(), true);
+    };
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', up);
+    handle.addEventListener('pointercancel', up);
+  });
+  handle.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowLeft')  { setPanelsWidth(current() + 10, true); e.preventDefault(); }
+    if (e.key === 'ArrowRight') { setPanelsWidth(current() - 10, true); e.preventDefault(); }
+  });
+  handle.addEventListener('dblclick', function() { setPanelsWidth(PANELS_MIN_W, true); });
+}

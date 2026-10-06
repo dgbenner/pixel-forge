@@ -122,6 +122,7 @@ function restoreTab(idx) {
   document.getElementById('status-doc').textContent = doc.title;
   document.getElementById('fg-color-swatch').style.backgroundColor = state.fgColor;
   document.getElementById('bg-color-swatch').style.backgroundColor = state.bgColor;
+  updateColorUI();
   fitToView();
 }
 

@@ -66,6 +66,12 @@
       <div class="dd-item" onclick="closeMenus(); window.open('quarry/index.html', '_blank', 'noopener')">Feature Quarry</div>
     </div>
   </div>
+  <div class="menu-item" id="menu-agents">Agent Cards
+    <div class="dropdown">
+      <div class="dd-item" data-card="pixelforge" onclick="agentCardShow('pixelforge', document.getElementById('menu-agents'))">PixelForge Agent</div>
+      <div class="dd-item" data-card="quarry" onclick="agentCardShow('quarry', document.getElementById('menu-agents'))">Feature Quarry</div>
+    </div>
+  </div>
   <input type="file" id="file-input" accept="image/*" style="display:none" onchange="loadImageFile(event)">
 </div>
 
@@ -151,23 +157,28 @@
     <div id="drop-hint">Drop image to add as a new layer</div>
   </div>
 
+  <!-- Drag to widen the right panels (all together) -->
+  <div id="panels-resize" role="separator" aria-orientation="vertical" aria-label="Resize panels" tabindex="0"></div>
+
   <!-- RIGHT PANELS -->
   <div id="panels">
 
     <!-- Agent -->
     <div class="panel" id="panel-agent">
       <div class="panel-header" onclick="togglePanel('agent')">
-        <span>Agent</span><span class="arrow">▾</span>
+        <span>Agent</span>
+        <button type="button" id="agent-card-info" aria-label="Agent card" aria-controls="agent-card" aria-expanded="false" title="How the agent works" onclick="agentCardToggle(event)">i</button>
+        <span class="arrow">▾</span>
       </div>
       <div class="panel-body">
         <textarea id="agent-request" placeholder="e.g. make this a moody film still (⌘↩ to run)"></textarea>
-        <input type="text" id="agent-pass" placeholder="Passphrase" autocomplete="off" spellcheck="false">
+        <input type="text" id="agent-pass" placeholder="Agent Password" aria-label="Agent Password" autocomplete="off" spellcheck="false">
         <label class="agent-toggle" title="A second model grades the result against your request before the agent may finish">
-          <input type="checkbox" id="agent-critic" checked> Critic
+          <input type="checkbox" id="agent-critic" checked> Critic Review
         </label>
         <div id="agent-ref" title="A style to match: color, contrast, tone and mood. Never edited or added to the document.">
           <div id="agent-ref-empty">
-            <div class="filter-reset-btn" onclick="document.getElementById('agent-ref-input').click()">Reference image…</div>
+            <div class="filter-reset-btn agent-ref-upload" onclick="document.getElementById('agent-ref-input').click()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Upload Reference Image</div>
           </div>
           <div id="agent-ref-set" style="display:none">
             <img id="agent-ref-thumb" alt="Style reference">
@@ -215,9 +226,9 @@
             <option value="color">Color</option>
             <option value="luminosity">Luminosity</option>
           </select>
-          <span style="font-size:10px;color:var(--text-dim)">Opacity</span>
-          <input type="number" min="0" max="100" value="100" id="layer-opacity" onchange="setLayerOpacity(this.value)" style="width:44px">
-          <span style="font-size:10px;color:var(--text-dim)">%</span>
+          <label class="layer-opacity-label" for="layer-opacity">Opacity</label>
+          <input type="number" min="0" max="100" value="100" id="layer-opacity" onchange="setLayerOpacity(this.value)">
+          <span class="layer-opacity-pct">%</span>
         </div>
         <div id="layers-list"></div>
         <div class="layer-actions">
@@ -239,34 +250,12 @@
           <div style="flex:1;height:30px;border-radius:3px;border:1px solid var(--border);cursor:pointer" id="cp-fg" onclick="pickFgColor()" title="Foreground"></div>
           <div style="flex:1;height:30px;border-radius:3px;border:1px solid var(--border);cursor:pointer" id="cp-bg" onclick="pickBgColor()" title="Background"></div>
         </div>
-        <div class="color-sliders">
-          <div class="color-row">
-            <label>R</label>
-            <input type="range" id="sl-r" min="0" max="255" oninput="sliderToColor()">
-            <input type="number" id="num-r" min="0" max="255" oninput="sliderToColor()" style="width:40px">
-          </div>
-          <div class="color-row">
-            <label>G</label>
-            <input type="range" id="sl-g" min="0" max="255" oninput="sliderToColor()">
-            <input type="number" id="num-g" min="0" max="255" oninput="sliderToColor()" style="width:40px">
-          </div>
-          <div class="color-row">
-            <label>B</label>
-            <input type="range" id="sl-b" min="0" max="255" oninput="sliderToColor()">
-            <input type="number" id="num-b" min="0" max="255" oninput="sliderToColor()" style="width:40px">
-          </div>
-          <div class="color-row">
-            <label>A</label>
-            <input type="range" id="sl-a" min="0" max="255" value="255" oninput="sliderToColor()">
-            <input type="number" id="num-a" min="0" max="255" value="255" oninput="sliderToColor()" style="width:40px">
-          </div>
-        </div>
+        <div id="color-models" class="color-models" role="group" aria-label="Color model"></div>
+        <div class="color-sliders" id="color-sliders"></div>
         <div id="hex-input-row">
           <label>#</label>
-          <input type="text" id="hex-input" maxlength="8" placeholder="000000ff" oninput="hexToColor()">
+          <input type="text" id="hex-input" maxlength="6" placeholder="000000" aria-label="Hex color" spellcheck="false" oninput="hexToColor()">
         </div>
-        <!-- Swatches -->
-        <div id="swatches-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin-top:6px"></div>
       </div>
     </div>
 
@@ -395,6 +384,12 @@
   });
 </script>
 
+<!-- AGENT CARDS: opened from the "Agent cards" menu; slides in from the right over everything below the menu bar -->
+<aside id="agent-card" aria-labelledby="agent-card-title" aria-hidden="true">
+  <div class="ac-ph"><span id="agent-card-label">Agent card</span><button type="button" id="agent-card-close" aria-label="Close agent card" onclick="agentCardSetOpen(false)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div id="agent-card-body"></div>
+</aside>
+
 <!-- NEW DOCUMENT / RESIZE MODAL -->
 <div id="modal-overlay">
   <div id="modal">
@@ -418,11 +413,13 @@
     3. tools   — drawing tools, mouse handlers (needs state, canvas)
     4. layers  — layer CRUD, panel render (needs state, canvas, history)
     5. history — undo/redo stack (needs state, canvas, layers)
-    6. color   — color picker, swatches (needs state)
+    6. color   — color models (RGB, HSL, HSB, CMYK), hex (needs state)
     7. filters — filter sliders and application (needs state, canvas, history)
     8. ui      — menus, keyboard, file ops, adjustments (needs everything)
     9. agent-tools — tools the agent can call (needs everything above)
    10. agent   — agent loop, panel, run log (needs agent-tools)
+   11. agent-card-data — the agent card's wording
+   12. agent-card — agent card panel, live run numbers, stats (needs agent, agent-card-data)
 -->
 <script src="js/state.js"></script>
 <script src="js/canvas.js"></script>
@@ -434,10 +431,13 @@
 <script src="js/ui.js"></script>
 <script src="js/agent-tools.js"></script>
 <script src="js/agent.js"></script>
+<script src="js/agent-card-data.js"></script>
+<script src="js/agent-card.js"></script>
 
 <script>
 // ── Bootstrap ─────────────────────────────────────────────
-buildSwatches();
+buildColorSliders();
+initPanelsResize();
 initDocument(1280, 720, '#ffffff');
 updateColorUI();
 setTool('brush');
@@ -445,6 +445,7 @@ updateOptionsBar('brush');
 initFilterSliders();
 initTabs();
 initAgentPanel();
+initAgentCard();
 </script>
 
 <!-- Default Statcounter code for PixelForge

@@ -74,6 +74,8 @@ The judge:
 
 Write `quarry/YYYY-MM-DD-report.md`, and a styled `quarry/YYYY-MM-DD-report.html` with the same content
 that Dan can open in a browser.
+Style the HTML in PixelForge's dark editor palette, the same colors as the agent cards in
+`css/style.css`: copy the `<style>` block from the most recent `quarry/*-report.html`.
 
 **Opening:** a 3-sentence summary of what PixelForge is missing most and why.
 
@@ -148,4 +150,8 @@ Validate that both files parse as JSON before finishing.
 - Every evidence rating needs at least one real link from this run's searches.
 - If the evidence for a candidate is thin, say so and rate it Low. Don't fill gaps from memory.
 - Name things for what they do. No darkroom jargon in titles.
+- Use title case for every title and label (feature titles, headings, "Leaner Path:", "Needs First:"), in
+  the report and in the run file. Small words stay lowercase: "Hide Part of a Layer Without Erasing It".
+- Write dates for people as "October 4, 2026" (month spelled out). File names and the `run` field keep
+  `YYYY-MM-DD`.
 - Finish with a one-paragraph summary in the conversation and the path to the HTML report.
