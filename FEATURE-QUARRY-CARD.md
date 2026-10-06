@@ -1,7 +1,8 @@
 # Agent Card: Feature Quarry
 
 **Project:** PixelForge · **Owner:** Dan Benner · **Last updated:** 2026-10-06
-**Status:** Live. The in-app card (**Agent cards › Feature Quarry** in the editor's menu bar) reads
+**Status:** Live. Direct link: https://dgbenner.github.io/pixel-forge/#agent-card/feature-quarry
+The in-app card (**Agent cards › Feature Quarry** in the editor's menu bar) reads
 the run count and latest run from `quarry/runs/index.json`. Its wording lives in
 `js/agent-card-data.js` (`FEATURE_QUARRY_CARD`); update it and this file together, with a changelog
 line in both. The skill (`.claude/skills/feature-quarry/SKILL.md`) is the source of truth.

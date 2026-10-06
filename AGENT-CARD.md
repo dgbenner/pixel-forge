@@ -1,7 +1,7 @@
 # PixelForge Agent — agent card
 
 The in-app version is under **Agent cards › PixelForge Agent** in the editor's menu bar (or the ⓘ
-in the Agent panel). The code is the source of truth: the card builds its tool list from `AGENT_TOOLS` and its
+in the Agent panel). Direct link: https://dgbenner.github.io/pixel-forge/#agent-card/pixelforge-agent The code is the source of truth: the card builds its tool list from `AGENT_TOOLS` and its
 limits from the constants in `js/agent.js`. Its wording lives in `js/agent-card-data.js`. When the
 agent changes, update that file and this one together, with a changelog line in both.
 

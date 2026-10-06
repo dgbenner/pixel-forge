@@ -376,6 +376,22 @@ function agentCardShow(which, opener) {
   agentCardSetOpen(true, opener);
 }
 
+// Links straight to a card: #agent-card/pixelforge-agent, #agent-card/feature-quarry
+var AGENT_CARD_HASH = { pixelforge: 'agent-card/pixelforge-agent', quarry: 'agent-card/feature-quarry' };
+
+function agentCardFromHash() {
+  var h = location.hash.replace(/^#/, '');
+  for (var k in AGENT_CARD_HASH) if (AGENT_CARD_HASH[k] === h) return k;
+  return null;
+}
+
+// Keep the address bar on the open card, so the link can be copied any time
+function agentCardSyncHash() {
+  var want = agentCardOpen ? '#' + AGENT_CARD_HASH[agentCardWhich] : '';
+  if (location.hash === want || (!want && !agentCardFromHash())) return;
+  history.replaceState(null, '', want || location.pathname + location.search);
+}
+
 function agentCardSetOpen(open, opener) {
   agentCardOpen = open;
   var card = document.getElementById('agent-card');
@@ -394,11 +410,22 @@ function agentCardSetOpen(open, opener) {
   } else if (agentCardOpener && card.contains(document.activeElement)) {
     agentCardOpener.focus();
   }
+  agentCardSyncHash();
 }
 
 function initAgentCard() {
   agentCardRender();
-  agentCardSetOpen(false);
+  var openFromHash = function() {
+    var which = agentCardFromHash();
+    if (which && !(agentCardOpen && agentCardWhich === which)) {
+      agentCardWhich = which;
+      if (which === 'quarry') acLoadQuarryRuns();
+      agentCardSetOpen(true, document.getElementById('menu-agents'));
+    }
+  };
+  // Read a card link before anything closes the panel (closing clears the link)
+  if (agentCardFromHash()) openFromHash(); else agentCardSetOpen(false);
+  window.addEventListener('hashchange', openFromHash);
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && agentCardOpen && !document.getElementById('modal-overlay').classList.contains('open')) {
       agentCardSetOpen(false);
