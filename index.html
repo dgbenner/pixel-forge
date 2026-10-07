@@ -68,8 +68,10 @@
   </div>
   <div class="menu-item" id="menu-agents">Agent Cards
     <div class="dropdown">
-      <div class="dd-item" data-card="pixelforge" onclick="agentCardShow('pixelforge', document.getElementById('menu-agents'))">PixelForge Agent</div>
-      <div class="dd-item" data-card="quarry" onclick="agentCardShow('quarry', document.getElementById('menu-agents'))">Feature Quarry</div>
+      <div class="dd-item" data-card="pixelforge" onclick="agentCardShow('pixelforge', document.getElementById('menu-agents'))"><span class="ac-agent-mark" aria-hidden="true"><img src="img/agent-card-pixelforge.png" alt="" width="38" height="40"></span>PixelForge Agent</div>
+      <div class="dd-item" data-card="quarry" onclick="agentCardShow('quarry', document.getElementById('menu-agents'))"><span class="ac-agent-mark" aria-hidden="true"><img src="img/agent-card-pixelforge.png" alt="" width="38" height="40"></span>Feature Quarry Agent</div>
+      <div class="dd-sep"></div>
+      <div class="dd-item" data-card="stories" onclick="agentCardShow('stories', document.getElementById('menu-agents'))"><em>Agent Stories</em></div>
     </div>
   </div>
   <input type="file" id="file-input" accept="image/*" style="display:none" onchange="loadImageFile(event)">

@@ -1,7 +1,8 @@
 // ═══════════════════════════════════════════════════════════
 //  COLOR
 //  Foreground / background colors, the Color panel's sliders in a
-//  choice of models (RGB, HSL, HSB, CMYK), and the hex field.
+//  choice of models (RGB, HSB, CMYK), and the hex field. HSB is the
+//  model Photoshop's picker uses; HSL was dropped to keep one hue model.
 //  state.fgColor / state.bgColor stay #rrggbb; the sliders are a view.
 // ═══════════════════════════════════════════════════════════
 
@@ -10,7 +11,6 @@ var COLOR_MODELS = {
   RGB:  { ch: ['R', 'G', 'B'],      max: [255, 255, 255],
           from: function(c) { return [c.r, c.g, c.b]; },
           to:   function(v) { return { r: v[0], g: v[1], b: v[2] }; } },
-  HSL:  { ch: ['H', 'S', 'L'],      max: [360, 100, 100], from: rgbToHsl, to: hslToRgb },
   HSB:  { ch: ['H', 'S', 'B'],      max: [360, 100, 100], from: rgbToHsb, to: hsbToRgb },
   // Simple device CMYK, no color profile: a guide for picking, not print-accurate
   CMYK: { ch: ['C', 'M', 'Y', 'K'], max: [100, 100, 100, 100], from: rgbToCmyk, to: cmykToRgb }
@@ -141,23 +141,6 @@ function swapColors() {
 }
 
 // ── Conversions (RGB 0–255; H 0–360; everything else 0–100) ──
-function rgbToHsl(c) {
-  var r = c.r / 255, g = c.g / 255, b = c.b / 255;
-  var max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, h = 0, s = 0, d = max - min;
-  if (d) {
-    s = d / (1 - Math.abs(2 * l - 1));
-    h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-    h = (h * 60 + 360) % 360;
-  }
-  return [Math.round(h), Math.round(s * 100), Math.round(l * 100)];
-}
-
-function hslToRgb(v) {
-  var h = v[0], s = v[1] / 100, l = v[2] / 100;
-  var c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2;
-  return hueParts(h, c, x, m);
-}
-
 function rgbToHsb(c) {
   var r = c.r / 255, g = c.g / 255, b = c.b / 255;
   var max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min, h = 0;

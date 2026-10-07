@@ -113,7 +113,7 @@ var AGENT_CARD = {
 // the skill. Mirror: FEATURE-QUARRY-CARD.md (update both, with a
 // changelog line).
 var FEATURE_QUARRY_CARD = {
-  title: 'Feature Quarry',
+  title: 'Feature Quarry Agent',
   summary: 'Researches what PixelForge should build next and recommends 5–6 features, with evidence and a build plan for each.',
   chips: ['Claude Code skill', 'Researcher + judge', 'Updated Oct 6'],
   trigger: 'Dan types <code>/feature-quarry</code> in Claude Code, in the pixel-forge folder. Use the repo version, not the account copy.',

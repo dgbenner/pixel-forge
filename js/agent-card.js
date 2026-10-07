@@ -11,7 +11,8 @@
 
 var AGENT_STATS_KEY = 'pf-agent-stats';
 var agentCardOpen = false;
-var agentCardWhich = 'pixelforge';   // 'pixelforge' | 'quarry'
+var agentCardWhich = 'pixelforge';   // 'pixelforge' | 'quarry' | 'stories'
+var agentStoriesMd = null;           // AGENT-STORIES.md once loaded, or { error }
 var agentCardQuarry = null;          // quarry/runs/index.json once loaded, or { error }
 var agentCardStep = 0;   // "How a run works" opens on Request, the first step
 var agentCardOpener = null;
@@ -214,8 +215,10 @@ function acHealthHTML() {
 function agentCardRender() {
   var root = document.getElementById('agent-card-body');
   if (!root) return;
-  document.getElementById('agent-card-label').textContent =
-    'Agent card · ' + (agentCardWhich === 'quarry' ? FEATURE_QUARRY_CARD.title : AGENT_CARD.title);
+  document.getElementById('agent-card-label').textContent = agentCardWhich === 'stories' ? 'Agent Stories'
+    : 'Agent card · ' + (agentCardWhich === 'quarry' ? FEATURE_QUARRY_CARD.title : AGENT_CARD.title);
+  root.classList.toggle('as-roomy', agentCardWhich === 'stories');
+  if (agentCardWhich === 'stories') { acRenderStories(root); return; }
   if (agentCardWhich === 'quarry') { acRenderQuarry(root); acWireItems(root); return; }
   var c = AGENT_CARD;
   var step = c.steps[agentCardStep];
@@ -281,6 +284,94 @@ function acWireItems(root) {
       b.querySelector('.ac-plus').textContent = opening ? '−' : '+';
     };
   });
+}
+
+// ── Agent Stories ─────────────────────────────────────────
+// AGENT-STORIES.md is the single source; this renders its sections. The file's
+// opening note (before the first ---) is for editors and isn't shown.
+function acLoadStories() {
+  return fetch('AGENT-STORIES.md', { cache: 'no-store' })
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+    .then(function(t) { agentStoriesMd = t; })
+    .catch(function(e) { agentStoriesMd = { error: e.message }; })
+    .then(function() { if (agentCardOpen && agentCardWhich === 'stories') agentCardRender(); });
+}
+
+// Inline markdown: **label** → small-caps label, `code`, [text](url)
+function acInline(t) {
+  return acEsc(t)
+    .replace(/\*\*([^*]+)\*\*/g, '<strong class="as-label">$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/(^|[\s(])(https?:\/\/[^\s)<]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+}
+
+// Split the file into ## sections: [{ title, lines }]
+function acStorySections(md) {
+  var body = md.split(/^---\s*$/m).slice(1).join('\n---\n');
+  var out = [], cur = null;
+  body.split('\n').forEach(function(line) {
+    var h = /^## (.+)$/.exec(line);
+    if (h) { cur = { title: h[1].trim(), lines: [] }; out.push(cur); }
+    else if (cur && line.trim() !== '---') cur.lines.push(line);
+  });
+  return out;
+}
+
+// Render a section's lines: quote blocks (each **Label** line its own row), ### subheads, lists, paragraphs
+function acStoryBlocks(lines) {
+  var html = '', quote = [], list = [], para = [];
+  var flush = function() {
+    if (quote.length) { html += '<div class="as-story">' + quote.map(function(q) { return '<p>' + acInline(q) + '</p>'; }).join('') + '</div>'; quote = []; }
+    if (list.length) { html += '<ul class="ac-list">' + list.map(function(l) { return '<li>' + acInline(l) + '</li>'; }).join('') + '</ul>'; list = []; }
+    if (para.length) { html += '<p class="as-p">' + acInline(para.join(' ')) + '</p>'; para = []; }
+  };
+  lines.forEach(function(line) {
+    var q = /^> ?(.*)$/.exec(line), sub = /^### (.+)$/.exec(line), li = /^- (.+)$/.exec(line);
+    if (q) {
+      if (list.length || para.length) { var keep = quote; quote = []; flush(); quote = keep; }
+      if (/^\*\*/.test(q[1]) || !quote.length) quote.push(q[1]); else quote[quote.length - 1] += ' ' + q[1];
+    } else if (sub) { flush(); html += '<h3 class="as-sub">' + acEsc(sub[1]) + '</h3>'; }
+    else if (li) { if (quote.length || para.length) { var k2 = list; list = []; flush(); list = k2; } list.push(li[1]); }
+    else if (/^\s+\S/.test(line) && list.length) list[list.length - 1] += ' ' + line.trim();
+    else if (!line.trim()) flush();
+    else { if (quote.length || list.length) flush(); para.push(line.trim()); }
+  });
+  flush();
+  return html;
+}
+
+// The code is the source of truth: warn if the PixelForge Agent story's limits drift from js/agent.js
+function acStoryDrift(section) {
+  if (!section) return '';
+  var t = section.lines.join(' ').replace(/\s+/g, ' '), missing = [];
+  if (t.indexOf('past ' + AGENT_MAX_STEPS + ' steps') < 0 && t.indexOf('after ' + AGENT_MAX_STEPS + ' steps') < 0) missing.push(AGENT_MAX_STEPS + ' steps');
+  if (t.indexOf('scores ' + AGENT_PASS_SCORE + ' or higher') < 0) missing.push('pass mark ' + AGENT_PASS_SCORE);
+  if (t.indexOf(AGENT_MAX_REVIEWS + ' reviews') < 0) missing.push(AGENT_MAX_REVIEWS + ' reviews');
+  return missing.length ? '<p class="as-drift"><b>Out of step with the code.</b> js/agent.js says ' + missing.join(', ') +
+    '; the story above says otherwise. Update AGENT-STORIES.md.</p>' : '';
+}
+
+function acRenderStories(root) {
+  var md = agentStoriesMd;
+  var head = '<header class="ac-head">' +
+      '<div class="ac-badge" aria-hidden="true"><img src="img/agent-card-pixelforge.png" alt="" width="38" height="40"></div>' +
+      '<div><h1 id="agent-card-title">Agent Stories</h1><p>A user story, extended for agents: who it serves, what it may and must never do, what it decides, when it stops, and how we know it works.</p></div>' +
+    '</header>';
+  if (!md) { root.innerHTML = head + '<p class="ac-dim">Loading the stories…</p>'; acLoadStories(); return; }
+  if (md.error) { root.innerHTML = head + '<p class="ac-dim">Couldn\'t read AGENT-STORIES.md (' + acEsc(md.error) + ').</p>'; return; }
+  var html = head;
+  acStorySections(md).forEach(function(sec) {
+    if (/^changelog$/i.test(sec.title)) {
+      html += '<div><details><summary>Changelog</summary>' + acStoryBlocks(sec.lines) + '</details></div>';
+      return;
+    }
+    var isAgent = /agent$/i.test(sec.title);
+    html += '<section class="ac-sect' + (isAgent ? ' as-agent' : ' as-template') + '"><div class="ac-sh"><h2 class="as-h">' +
+      AC_AGENT_MARK + acEsc(sec.title) + '</h2></div>' + acStoryBlocks(sec.lines) +
+      (/^pixelforge agent$/i.test(sec.title) ? acStoryDrift(sec) : '') + '</section>';
+  });
+  root.innerHTML = html;
 }
 
 // ── Feature Quarry card ───────────────────────────────────
@@ -373,11 +464,12 @@ function agentCardShow(which, opener) {
   if (agentCardOpen && agentCardWhich === which) { agentCardSetOpen(false); return; }
   agentCardWhich = which;
   if (which === 'quarry') acLoadQuarryRuns();
+  if (which === 'stories') acLoadStories();
   agentCardSetOpen(true, opener);
 }
 
 // Links straight to a card: #agent-card/pixelforge-agent, #agent-card/feature-quarry
-var AGENT_CARD_HASH = { pixelforge: 'agent-card/pixelforge-agent', quarry: 'agent-card/feature-quarry' };
+var AGENT_CARD_HASH = { pixelforge: 'agent-card/pixelforge-agent', quarry: 'agent-card/feature-quarry', stories: 'agent-stories' };
 
 function agentCardFromHash() {
   var h = location.hash.replace(/^#/, '');
@@ -420,6 +512,7 @@ function initAgentCard() {
     if (which && !(agentCardOpen && agentCardWhich === which)) {
       agentCardWhich = which;
       if (which === 'quarry') acLoadQuarryRuns();
+      if (which === 'stories') acLoadStories();
       agentCardSetOpen(true, document.getElementById('menu-agents'));
     }
   };
